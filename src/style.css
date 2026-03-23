@@ -1,0 +1,211 @@
+/* ── Reset & box model ─────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Design tokens ─────────────────────────────────────── */
+:root {
+  --bg:          #0d0d0d;
+  --panel:       #161616;
+  --panel-raise: #1e1e1e;
+  --border:      #2a2a2a;
+  --accent:      #e85d04;
+  --accent-dim:  #7a2f00;
+  --text-hi:     #b8b4ae;
+  --text-lo:     #5a5a5a;
+  --led-on:      #ff6b00;
+  --led-off:     #1a0900;
+
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-mono:    'Share Tech Mono', monospace;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --shadow-inset: inset 0 2px 6px rgba(0,0,0,.6);
+  --shadow-raise: 0 4px 12px rgba(0,0,0,.6);
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;   /* prevent iOS font-size change on rotate */
+  text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-hi);
+  font-family: var(--font-display);
+  min-height: 100dvh;               /* dvh: correct on mobile browsers        */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: env(safe-area-inset-top, 0)
+           env(safe-area-inset-right, 0)
+           env(safe-area-inset-bottom, 0)
+           env(safe-area-inset-left, 0);
+  overflow-x: hidden;
+}
+
+/* ── App shell ─────────────────────────────────────────── */
+#app {
+  width: 100%;
+  max-width: 900px;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.dm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.dm-logo {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-hi);
+  line-height: 1;
+}
+
+.dm-logo span {
+  color: var(--accent);
+}
+
+.dm-version {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-lo);
+  letter-spacing: 0.1em;
+}
+
+/* ── LED status strip ──────────────────────────────────── */
+.dm-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-lo);
+  letter-spacing: 0.08em;
+}
+
+.dm-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--led-off);
+  box-shadow: 0 0 0 1px rgba(255,107,0,.2);
+  transition: background 0.1s, box-shadow 0.1s;
+}
+
+.dm-led.active {
+  background: var(--led-on);
+  box-shadow: 0 0 6px var(--led-on), 0 0 14px var(--accent-dim);
+}
+
+/* ── Welcome panel ─────────────────────────────────────── */
+.dm-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 2rem 1.5rem;
+  box-shadow: var(--shadow-raise);
+}
+
+.dm-panel h1 {
+  font-size: clamp(2rem, 8vw, 4rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.dm-panel h1 em {
+  color: var(--accent);
+  font-style: normal;
+}
+
+.dm-panel p {
+  font-family: var(--font-mono);
+  font-size: clamp(0.7rem, 2.5vw, 0.85rem);
+  color: var(--text-lo);
+  line-height: 1.7;
+  max-width: 52ch;
+  margin-top: 1rem;
+}
+
+/* ── Divider ───────────────────────────────────────────── */
+.dm-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.25rem 0;
+}
+
+/* ── Pill badges ───────────────────────────────────────── */
+.dm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dm-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  background: rgba(232,93,4,.06);
+  text-transform: uppercase;
+}
+
+/* ── Responsive tweaks ─────────────────────────────────── */
+@media (max-width: 480px) {
+  #app {
+    padding: 1rem 0.75rem;
+  }
+
+  .dm-panel {
+    padding: 1.25rem 1rem;
+  }
+}
+
+/* ── Scroll bar (Webkit + Firefox) ────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+* { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
+
+/* ── Animation ─────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dm-header,
+.dm-panel {
+  animation: fadeUp 0.4s ease both;
+}
+
+.dm-panel { animation-delay: 0.08s; }
