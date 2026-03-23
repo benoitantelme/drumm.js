@@ -2,6 +2,7 @@
   "name": "drumm.js",
   "version": "0.1.0",
   "description": "Interactive drum machine — GitHub Pages",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
