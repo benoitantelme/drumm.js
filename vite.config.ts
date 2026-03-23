@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  // Replace 'drummjs' with your actual GitHub repo name if different
-  base: '/drummjs/',
+  // base is the actual GitHub repo name if different
+  base: '/drumm.js/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
