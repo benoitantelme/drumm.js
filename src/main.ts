@@ -38,7 +38,7 @@ function render(root: HTMLElement): void {
   root.innerHTML = /* html */ `
     <header class="dm-header">
       <div class="dm-logo">
-        DRUM<span>&nbsp;MCH</span>
+        Drumm<span>.js</span>
       </div>
       <span class="dm-version">v${APP.version}</span>
     </header>
