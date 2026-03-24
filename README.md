@@ -4,11 +4,13 @@ An interactive browser-based drum machine built with TypeScript + Vite, deployed
 
 ## Project Roadmap
 
-- [x] **Phase 1** — Responsive TypeScript scaffold (this commit)
-- [ ] **Phase 2** — Web Audio API engine + instrument definitions
-- [ ] **Phase 3** — Step sequencer UI
-- [ ] **Phase 4** — Instrument parameter controls (tune, decay, filter…)
-- [ ] **Phase 5** — Save / load patterns
+- [x] **Phase 1** — Responsive TypeScript scaffold
+- [x] **Phase 2** — Start-up flow: greeting page → machine page (empty shell, no audio yet)
+- [ ] **Phase 3** — Web Audio API engine (AudioContext, scheduler, timing loop)
+- [ ] **Phase 4** — Instrument definitions (synth/sample abstraction, basic sounds)
+- [ ] **Phase 5** — Step sequencer UI (grid, transport controls, BPM)
+- [ ] **Phase 6** — Instrument parameter controls (tune, decay, filter…)
+- [ ] **Phase 7** — Save / load patterns
 
 ## Local Development
 
