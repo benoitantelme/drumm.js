@@ -36,6 +36,14 @@ function renderGreeting(root: HTMLElement): void {
 
   root.innerHTML = /* html */ `
     <div class="dm-greeting">
+      <div class="dm-greeting__logo">
+        ${getLogoHTML()}
+      </div>
+      <p class="dm-greeting__sub">a drum machine for the browser</p>
+      <button class="dm-start-btn" id="start-btn" aria-label="Start drum machine">
+        START
+      </button>
+      <span class="dm-version">v${APP.version}</span>
       <div class="dm-greeting__info">
         <p class="dm-greeting__info-text">
           Welcome to the drum machine project.<br />
@@ -50,14 +58,6 @@ function renderGreeting(root: HTMLElement): void {
           <span class="dm-badge">Responsive</span>
         </div>
       </div>
-      <div class="dm-greeting__logo">
-        ${getLogoHTML()}
-      </div>
-      <p class="dm-greeting__sub">a drum machine for the browser</p>
-      <button class="dm-start-btn" id="start-btn" aria-label="Start drum machine">
-        START
-      </button>
-      <span class="dm-version">v${APP.version}</span>
     </div>
   `
 
