@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  // base is the actual GitHub repo name if different
+  // Must exactly match your GitHub repo name
   base: '/drumm.js/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+  },
+  test: {
+    environment: 'jsdom',
+    include: ['src/tests/**/*.test.ts'],
   },
 })

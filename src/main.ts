@@ -1,6 +1,6 @@
 /**
- * drum-machine — main entry point
- * Phase 1: Hello World scaffold
+ * drumm.js — main entry point
+ * Phase 2: Greeting page → machine page transition
  */
 
 interface AppInfo {
@@ -9,11 +9,17 @@ interface AppInfo {
   buildTime: string
 }
 
-const APP: AppInfo = {
-  name: 'DRUM MACHINE',
+export const APP: AppInfo = {
+  name: 'Drumm.js',
   version: '0.1.0',
   buildTime: new Date().toISOString(),
 }
+
+export function getLogoHTML(): string {
+  return `Drumm<span>.js</span>`
+}
+
+// ── Views ────────────────────────────────────────────────
 
 function detectPlatform(): string {
   const ua = navigator.userAgent
@@ -25,88 +31,72 @@ function detectPlatform(): string {
   return 'Chromium'
 }
 
-function createLED(active = false): HTMLSpanElement {
-  const led = document.createElement('span')
-  led.className = `dm-led${active ? ' active' : ''}`
-  led.setAttribute('aria-hidden', 'true')
-  return led
-}
-
-function render(root: HTMLElement): void {
+function renderGreeting(root: HTMLElement): void {
   const platform = detectPlatform()
 
   root.innerHTML = /* html */ `
-    <header class="dm-header">
-      <div class="dm-logo">
-        Drumm<span>.js</span>
+    <div class="dm-greeting">
+      <div class="dm-greeting__logo">
+        ${getLogoHTML()}
       </div>
+      <p class="dm-greeting__sub">a drum machine for the browser</p>
+      <button class="dm-start-btn" id="start-btn" aria-label="Start drum machine">
+        START
+      </button>
       <span class="dm-version">v${APP.version}</span>
-    </header>
-
-    <section class="dm-panel" aria-label="Welcome">
-      <h1>Hello,<br /><em>World.</em></h1>
-
-      <div class="dm-status" id="status-bar">
-        <!-- LEDs injected by JS -->
+      <div class="dm-greeting__info">
+        <p class="dm-greeting__info-text">
+          Welcome to the drum machine project.<br />
+          Running on <strong>${platform}</strong>.<br />
+          Instruments, sequencer, and audio engine coming next.
+        </p>
+        <div class="dm-badges">
+          <span class="dm-badge">TypeScript</span>
+          <span class="dm-badge">Vite</span>
+          <span class="dm-badge">GitHub Pages</span>
+          <span class="dm-badge">Web Audio API</span>
+          <span class="dm-badge">Responsive</span>
+        </div>
       </div>
-
-      <hr class="dm-divider" />
-
-      <p>
-        Welcome to the drum machine project.<br />
-        This is your responsive TypeScript foundation — running on
-        <strong style="color:var(--text-hi)">${platform}</strong>.<br />
-        Instruments, sequencer, and audio engine coming next.
-      </p>
-
-      <div class="dm-badges">
-        <span class="dm-badge">TypeScript</span>
-        <span class="dm-badge">Vite</span>
-        <span class="dm-badge">GitHub Pages</span>
-        <span class="dm-badge">Web Audio API</span>
-        <span class="dm-badge">Responsive</span>
-      </div>
-    </section>
+    </div>
   `
 
-  // Animate LEDs to confirm JS is running
-  const statusBar = document.getElementById('status-bar')!
-  const labels = ['POWER', 'AUDIO', 'MIDI', 'SYNC']
-
-  labels.forEach((label, i) => {
-    const wrapper = document.createElement('span')
-    wrapper.style.display = 'flex'
-    wrapper.style.alignItems = 'center'
-    wrapper.style.gap = '4px'
-
-    const led = createLED(false)
-    wrapper.appendChild(led)
-    wrapper.appendChild(document.createTextNode(label))
-
-    if (i < labels.length - 1) {
-      const sep = document.createElement('span')
-      sep.textContent = '·'
-      sep.style.color = 'var(--border)'
-      sep.style.marginLeft = '4px'
-      wrapper.appendChild(sep)
-    }
-
-    statusBar.appendChild(wrapper)
-
-    // Staggered power-on sequence
-    setTimeout(() => led.classList.add('active'), 200 + i * 180)
-  })
+  root.querySelector<HTMLButtonElement>('#start-btn')!
+    .addEventListener('click', () => renderMachine(root))
 }
 
-// Boot
-const appRoot = document.getElementById('app')
-if (appRoot) {
-  render(appRoot)
-} else {
-  console.error('[drum-machine] #app root element not found')
+function renderMachine(root: HTMLElement): void {
+  root.innerHTML = /* html */ `
+    <div class="dm-machine">
+      <div class="dm-machine__body">
+        <header class="dm-machine__header">
+          <div class="dm-logo">${getLogoHTML()}</div>
+          <span class="dm-version">v${APP.version}</span>
+        </header>
+        <div class="dm-machine__stage">
+          <span class="dm-machine__placeholder">instruments &amp; sequencer coming soon</span>
+        </div>
+      </div>
+    </div>
+  `
 }
 
-console.info(`%c${APP.name} %cv${APP.version}`, 
-  'font-weight:bold;color:#e85d04;', 
-  'color:#5a5a5a;'
-)
+/** Public entry point — renders the greeting view into the given root element. */
+export function render(root: HTMLElement): void {
+  renderGreeting(root)
+}
+
+// ── Boot — only runs in a browser context, not during tests ──
+if (typeof document !== 'undefined') {
+  const appRoot = document.getElementById('app')
+  if (appRoot) {
+    renderGreeting(appRoot)
+  } else {
+    console.error('[drumm.js] #app root element not found')
+  }
+
+  console.info(`%c${APP.name} %cv${APP.version}`,
+    'font-weight:bold;color:#e85d04;',
+    'color:#5a5a5a;'
+  )
+}
