@@ -61,7 +61,7 @@ function renderGreeting(root: HTMLElement): void {
     </div>
   `
 
-  document.getElementById('start-btn')!
+  root.querySelector<HTMLButtonElement>('#start-btn')!
     .addEventListener('click', () => renderMachine(root))
 }
 
@@ -79,6 +79,11 @@ function renderMachine(root: HTMLElement): void {
       </div>
     </div>
   `
+}
+
+/** Public entry point — renders the greeting view into the given root element. */
+export function render(root: HTMLElement): void {
+  renderGreeting(root)
 }
 
 // ── Boot — only runs in a browser context, not during tests ──

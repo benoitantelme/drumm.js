@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { getLogoHTML, APP } from '../main.ts'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { getLogoHTML, APP, render } from '../main.ts'
 
 describe('getLogoHTML', () => {
   it('matches the exact expected markup', () => {
@@ -14,5 +14,27 @@ describe('APP', () => {
 
   it('has a version string', () => {
     expect(APP.version).toMatch(/^\d+\.\d+\.\d+$/)
+  })
+})
+
+describe('render', () => {
+  let root: HTMLElement
+
+  beforeEach(() => {
+    root = document.createElement('div')
+    document.body.appendChild(root)
+    render(root)
+  })
+
+  it('starts on the greeting page with a start button', () => {
+    expect(root.querySelector('#start-btn')).not.toBeNull()
+    expect(root.querySelector('.dm-greeting')).not.toBeNull()
+  })
+
+  it('navigates to the machine page when start button is clicked', () => {
+    const btn = root.querySelector<HTMLButtonElement>('#start-btn')!
+    btn.click()
+    expect(root.querySelector('.dm-machine')).not.toBeNull()
+    expect(root.querySelector('#start-btn')).toBeNull()
   })
 })
