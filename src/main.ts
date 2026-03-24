@@ -1,5 +1,5 @@
 /**
- * drum-machine — main entry point
+ * drumm.js — main entry point
  * Phase 1: Hello World scaffold
  */
 
@@ -9,10 +9,14 @@ interface AppInfo {
   buildTime: string
 }
 
-const APP: AppInfo = {
-  name: 'DRUM MACHINE',
+export const APP: AppInfo = {
+  name: 'Drumm.js',
   version: '0.1.0',
   buildTime: new Date().toISOString(),
+}
+
+export function getLogoHTML(): string {
+  return `Drumm<span>.js</span>`
 }
 
 function detectPlatform(): string {
@@ -32,13 +36,13 @@ function createLED(active = false): HTMLSpanElement {
   return led
 }
 
-function render(root: HTMLElement): void {
+export function render(root: HTMLElement): void {
   const platform = detectPlatform()
 
   root.innerHTML = /* html */ `
     <header class="dm-header">
       <div class="dm-logo">
-        Drumm<span>.js</span>
+        ${getLogoHTML()}
       </div>
       <span class="dm-version">v${APP.version}</span>
     </header>
@@ -98,15 +102,17 @@ function render(root: HTMLElement): void {
   })
 }
 
-// Boot
-const appRoot = document.getElementById('app')
-if (appRoot) {
-  render(appRoot)
-} else {
-  console.error('[drum-machine] #app root element not found')
-}
+// Boot — only runs in a browser context, not during tests
+if (typeof document !== 'undefined') {
+  const appRoot = document.getElementById('app')
+  if (appRoot) {
+    render(appRoot)
+  } else {
+    console.error('[drumm.js] #app root element not found')
+  }
 
-console.info(`%c${APP.name} %cv${APP.version}`, 
-  'font-weight:bold;color:#e85d04;', 
-  'color:#5a5a5a;'
-)
+  console.info(`%c${APP.name} %cv${APP.version}`,
+    'font-weight:bold;color:#e85d04;',
+    'color:#5a5a5a;'
+  )
+}
