@@ -37,4 +37,14 @@ describe('render', () => {
     expect(root.querySelector('.dm-machine')).not.toBeNull()
     expect(root.querySelector('#start-btn')).toBeNull()
   })
+
+  it('shows a play button on the machine page', () => {
+    root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    expect(root.querySelector('#play-btn')).not.toBeNull()
+  })
+
+  it('shows a stop button on the machine page', () => {
+    root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    expect(root.querySelector('#stop-btn')).not.toBeNull()
+  })
 })

@@ -78,6 +78,9 @@ function renderMachine(root: HTMLElement): void {
             <button class="dm-play-btn" id="play-btn" aria-label="Play">
               ▶
             </button>
+            <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">
+              ■
+            </button>
           </div>
           <span class="dm-machine__placeholder">instruments &amp; sequencer coming soon</span>
         </div>

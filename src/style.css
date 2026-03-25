@@ -236,9 +236,11 @@ body {
 .dm-transport {
   display: flex;
   justify-content: center;
+  gap: 0.5rem;
 }
 
-.dm-play-btn {
+.dm-play-btn,
+.dm-stop-btn {
   font-size: 1.1rem;
   width: 52px;
   height: 36px;
@@ -253,13 +255,15 @@ body {
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
-.dm-play-btn:hover {
+.dm-play-btn:hover,
+.dm-stop-btn:hover {
   background: var(--accent);
   color: #0d0d0d;
   box-shadow: 0 0 16px rgba(232,93,4,.4);
 }
 
-.dm-play-btn:active {
+.dm-play-btn:active,
+.dm-stop-btn:active {
   transform: scale(0.95);
 }
 
