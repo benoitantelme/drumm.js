@@ -1,7 +1,9 @@
 /**
  * drumm.js — main entry point
- * Phase 2: Greeting page → machine page transition
+ * Phase 3: Web Audio API engine wired to machine page
  */
+
+import { AudioEngine } from './AudioEngine.ts'
 
 interface AppInfo {
   name: string
@@ -14,6 +16,8 @@ export const APP: AppInfo = {
   version: '0.1.0',
   buildTime: new Date().toISOString(),
 }
+
+export const audioEngine = new AudioEngine()
 
 export function getLogoHTML(): string {
   return `Drumm<span>.js</span>`
@@ -66,6 +70,10 @@ function renderGreeting(root: HTMLElement): void {
 }
 
 function renderMachine(root: HTMLElement): void {
+  // Initialise the AudioContext — must happen inside a user gesture (the
+  // START button click), which is why it lives here and not at module level.
+  audioEngine.init()
+
   root.innerHTML = /* html */ `
     <div class="dm-machine">
       <div class="dm-machine__body">
