@@ -95,6 +95,12 @@ function renderMachine(root: HTMLElement): void {
       </div>
     </div>
   `
+
+  root.querySelector<HTMLButtonElement>('#play-btn')!
+    .addEventListener('click', () => audioEngine.play())
+
+  root.querySelector<HTMLButtonElement>('#stop-btn')!
+    .addEventListener('click', () => audioEngine.stop())
 }
 
 /** Public entry point — renders the greeting view into the given root element. */
