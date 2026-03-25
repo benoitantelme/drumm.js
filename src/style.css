@@ -220,9 +220,42 @@ body {
 .dm-machine__stage {
   min-height: clamp(240px, 40vw, 420px);
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem;
+}
+
+/* ── Transport ─────────────────────────────────────────── */
+.dm-transport {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.dm-play-btn {
+  font-size: 1.1rem;
+  width: 52px;
+  height: 36px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.dm-play-btn:hover {
+  background: var(--accent);
+  color: #0d0d0d;
+  box-shadow: 0 0 16px rgba(232,93,4,.4);
+}
+
+.dm-play-btn:active {
+  transform: scale(0.95);
 }
 
 .dm-machine__placeholder {

@@ -74,6 +74,11 @@ function renderMachine(root: HTMLElement): void {
           <span class="dm-version">v${APP.version}</span>
         </header>
         <div class="dm-machine__stage">
+          <div class="dm-transport">
+            <button class="dm-play-btn" id="play-btn" aria-label="Play">
+              ▶
+            </button>
+          </div>
           <span class="dm-machine__placeholder">instruments &amp; sequencer coming soon</span>
         </div>
       </div>
