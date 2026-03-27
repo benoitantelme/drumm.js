@@ -142,6 +142,14 @@ function renderMachine(root: HTMLElement): void {
 
   initKnobs(root)
   initFaders(root)
+
+  // Wire fader directly → audio engine volume
+  const faderEl = root.querySelector<HTMLInputElement>('#fader-bass-drum')
+  if (faderEl) {
+    faderEl.addEventListener('input', () => {
+      audioEngine.setInstrumentVolume('bass-drum', Number(faderEl.value))
+    })
+  }
 }
 
 /** Public entry point — renders the greeting view into the given root element. */

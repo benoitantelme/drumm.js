@@ -2,6 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { AudioEngine } from '../AudioEngine.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
+// GainNode mock tracks .gain.value so volume tests can read it back.
+function makeMockGainNode() {
+  return {
+    gain: { value: 1, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    connect: vi.fn(),
+  }
+}
+
 const mockResume  = vi.fn().mockResolvedValue(undefined)
 const mockSuspend = vi.fn().mockResolvedValue(undefined)
 const mockClose   = vi.fn().mockResolvedValue(undefined)
@@ -10,16 +18,11 @@ class MockAudioContext {
   state: string = 'running'
   currentTime: number = 0
   sampleRate: number = 44100
+  destination = {}
   resume  = mockResume
   suspend = mockSuspend
   close   = mockClose
-  destination = {}
-  createGain() {
-    return {
-      gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
-      connect: vi.fn(),
-    }
-  }
+  createGain   = vi.fn().mockImplementation(makeMockGainNode)
   createOscillator() {
     return {
       type: 'sine',
@@ -104,5 +107,39 @@ describe('AudioEngine', () => {
     engine.init()
     expect(() => engine.stop()).not.toThrow()
     expect(engine.isPlaying).toBe(false)
+  })
+
+  describe('instrument volume', () => {
+    it('returns default 70 before init()', () => {
+      expect(engine.getInstrumentVolume('bass-drum')).toBe(70)
+    })
+
+    it('defaults to 70 after init() matching fader default', () => {
+      engine.init()
+      expect(engine.getInstrumentVolume('bass-drum')).toBe(70)
+    })
+
+    it('sets bass-drum volume to 0', () => {
+      engine.init()
+      engine.setInstrumentVolume('bass-drum', 0)
+      expect(engine.getInstrumentVolume('bass-drum')).toBe(0)
+    })
+
+    it('sets bass-drum volume to 100', () => {
+      engine.init()
+      engine.setInstrumentVolume('bass-drum', 100)
+      expect(engine.getInstrumentVolume('bass-drum')).toBe(100)
+    })
+
+    it('sets bass-drum volume to an arbitrary value', () => {
+      engine.init()
+      engine.setInstrumentVolume('bass-drum', 42)
+      expect(engine.getInstrumentVolume('bass-drum')).toBe(42)
+    })
+
+    it('ignores unknown instrument names', () => {
+      engine.init()
+      expect(() => engine.setInstrumentVolume('snare', 50)).not.toThrow()
+    })
   })
 })

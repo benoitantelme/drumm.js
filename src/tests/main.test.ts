@@ -2,36 +2,37 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getLogoHTML, APP, render, audioEngine } from '../main.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
-class MockAudioContext {
-  state: string = 'running'
-  currentTime: number = 0
-  sampleRate: number = 44100
-  destination = {}
-  resume  = vi.fn().mockResolvedValue(undefined)
-  suspend = vi.fn().mockResolvedValue(undefined)
-  close   = vi.fn().mockResolvedValue(undefined)
-  createGain() {
-    return {
-      gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
-      connect: vi.fn(),
-    }
+// createGain must always return the same shared object so that
+// setInstrumentVolume and getInstrumentVolume operate on the same node.
+function makeMockAudioContext() {
+  const sharedGain = {
+    gain: { value: 1, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    connect: vi.fn(),
   }
-  createOscillator() {
-    return {
+  return {
+    state: 'running',
+    currentTime: 0,
+    sampleRate: 44100,
+    destination: {},
+    resume:  vi.fn().mockResolvedValue(undefined),
+    suspend: vi.fn().mockResolvedValue(undefined),
+    close:   vi.fn().mockResolvedValue(undefined),
+    createGain: vi.fn().mockReturnValue(sharedGain),
+    createOscillator: vi.fn().mockReturnValue({
       type: 'sine',
       frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
       connect: vi.fn(), start: vi.fn(), stop: vi.fn(),
-    }
-  }
-  createBuffer(_ch: number, length: number, _rate: number) {
-    return { getChannelData: () => new Float32Array(length) }
-  }
-  createBufferSource() {
-    return { buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn() }
+    }),
+    createBuffer: vi.fn().mockImplementation((_ch: number, length: number) => ({
+      getChannelData: () => new Float32Array(length),
+    })),
+    createBufferSource: vi.fn().mockReturnValue({
+      buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn(),
+    }),
   }
 }
 
-vi.stubGlobal('AudioContext', MockAudioContext)
+vi.stubGlobal('AudioContext', vi.fn().mockImplementation(makeMockAudioContext))
 
 // ── Tests ────────────────────────────────────────────────
 describe('getLogoHTML', () => {
@@ -134,6 +135,27 @@ describe('render', () => {
 
     it('renders the volume fader', () => {
       expect(root.querySelector('#fader-bass-drum')).not.toBeNull()
+    })
+
+    it('moving the fader updates the bass drum volume in the engine', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-bass-drum')!
+      fader.value = '42'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('bass-drum')).toBe(42)
+    })
+
+    it('fader at 0 sets engine volume to 0', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-bass-drum')!
+      fader.value = '0'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('bass-drum')).toBe(0)
+    })
+
+    it('fader at 100 sets engine volume to 100', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-bass-drum')!
+      fader.value = '100'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('bass-drum')).toBe(100)
     })
   })
 })

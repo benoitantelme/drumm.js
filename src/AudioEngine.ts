@@ -2,7 +2,7 @@
  * drumm.js — AudioEngine
  * Phase 3: Web Audio API engine
  *
- * Owns the AudioContext, scheduler, and synth voices.
+ * Owns the AudioContext, scheduler, synth voices, and instrument gain nodes.
  * Never touches the DOM — UI calls methods on this class.
  */
 
@@ -13,26 +13,22 @@ export type AudioEngineState = 'uninitialized' | 'running' | 'suspended' | 'clos
 // plus a short noise burst for the attack transient, shaped by
 // gain envelopes. No samples — fully synthetic, very lightweight.
 
-const KICK_INTERVAL_S  = 0.667  // ~90 BPM four-on-the-floor (4 beats/bar ÷ 6)
-const SCHEDULE_AHEAD_S = 0.1    // how far ahead to schedule (seconds)
-const SCHEDULER_TICK_MS = 50    // how often the scheduler runs (ms)
-const KICK_VOLUME       = 0.35  // master gain (0–1)
+const KICK_INTERVAL_S   = 0.667  // ~90 BPM four-on-the-floor
+const SCHEDULE_AHEAD_S  = 0.1    // how far ahead to schedule (seconds)
+const SCHEDULER_TICK_MS = 50     // how often the scheduler runs (ms)
+const KICK_BASE_VOLUME  = 0.35   // internal synth level (0–1)
 
-function scheduleKick(ctx: AudioContext, time: number): void {
-  const masterGain = ctx.createGain()
-  masterGain.gain.setValueAtTime(KICK_VOLUME, time)
-  masterGain.connect(ctx.destination)
-
+function scheduleKick(ctx: AudioContext, time: number, gainNode: GainNode): void {
   // ── Pitch sweep oscillator ─────────────────────────────
   const osc = ctx.createOscillator()
   const oscGain = ctx.createGain()
   osc.type = 'sine'
   osc.frequency.setValueAtTime(80, time)
   osc.frequency.exponentialRampToValueAtTime(30, time + 0.35)
-  oscGain.gain.setValueAtTime(1, time)
+  oscGain.gain.setValueAtTime(KICK_BASE_VOLUME, time)
   oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.4)
   osc.connect(oscGain)
-  oscGain.connect(masterGain)
+  oscGain.connect(gainNode)
   osc.start(time)
   osc.stop(time + 0.4)
 
@@ -48,7 +44,7 @@ function scheduleKick(ctx: AudioContext, time: number): void {
   noiseGain.gain.setValueAtTime(0.3, time)
   noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05)
   noise.connect(noiseGain)
-  noiseGain.connect(masterGain)
+  noiseGain.connect(gainNode)
   noise.start(time)
   noise.stop(time + 0.05)
 }
@@ -56,15 +52,22 @@ function scheduleKick(ctx: AudioContext, time: number): void {
 // ── AudioEngine ──────────────────────────────────────────
 
 export class AudioEngine {
-  private context:      AudioContext | null = null
-  private schedulerTimer: ReturnType<typeof setInterval> | null = null
-  private nextKickTime:   number = 0
-  private _isPlaying:     boolean = false
+  private context:           AudioContext | null = null
+  private bassDrumGain:      GainNode | null = null
+  private bassDrumVolume:    number = 70          // 0–100, mirrors fader default
+  private schedulerTimer:    ReturnType<typeof setInterval> | null = null
+  private nextKickTime:      number = 0
+  private _isPlaying:        boolean = false
 
   /** Initialise the AudioContext. Must be called from a user gesture. */
   init(): void {
     if (this.context) return
     this.context = new AudioContext()
+
+    // Persistent gain node for the bass drum — stays alive for the session.
+    this.bassDrumGain = this.context.createGain()
+    this.bassDrumGain.gain.value = this.bassDrumVolume / 100
+    this.bassDrumGain.connect(this.context.destination)
   }
 
   getContext(): AudioContext | null {
@@ -80,6 +83,23 @@ export class AudioEngine {
     return this._isPlaying
   }
 
+  /**
+   * Set the bass drum instrument volume.
+   * @param value 0–100 (matches fader range)
+   */
+  setInstrumentVolume(instrument: string, value: number): void {
+    if (instrument !== 'bass-drum') return
+    this.bassDrumVolume = value
+    if (this.bassDrumGain) {
+      this.bassDrumGain.gain.value = value / 100
+    }
+  }
+
+  getInstrumentVolume(instrument: string): number | null {
+    if (instrument !== 'bass-drum') return null
+    return this.bassDrumVolume
+  }
+
   /** Start the bass-drum loop. */
   async play(): Promise<void> {
     if (!this.context || this._isPlaying) return
@@ -88,9 +108,9 @@ export class AudioEngine {
     this.nextKickTime = this.context.currentTime
 
     this.schedulerTimer = setInterval(() => {
-      if (!this.context) return
+      if (!this.context || !this.bassDrumGain) return
       while (this.nextKickTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleKick(this.context, this.nextKickTime)
+        scheduleKick(this.context, this.nextKickTime, this.bassDrumGain)
         this.nextKickTime += KICK_INTERVAL_S
       }
     }, SCHEDULER_TICK_MS)
@@ -120,6 +140,7 @@ export class AudioEngine {
     this.stop()
     if (!this.context) return
     await this.context.close()
+    this.bassDrumGain = null
     this.context = null
   }
 }
