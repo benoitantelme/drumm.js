@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { AudioEngine } from '../AudioEngine.ts'
+import { AudioEngine, tuneToHz } from '../AudioEngine.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
 // GainNode mock tracks .gain.value so volume tests can read it back.
@@ -140,6 +140,41 @@ describe('AudioEngine', () => {
     it('ignores unknown instrument names', () => {
       engine.init()
       expect(() => engine.setInstrumentVolume('snare', 50)).not.toThrow()
+    })
+  })
+
+  describe('bass drum tune', () => {
+    it('defaults to 50', () => {
+      expect(engine.getBassDrumTune()).toBe(50)
+    })
+
+    it('sets tune to an arbitrary value', () => {
+      engine.setBassDrumTune(75)
+      expect(engine.getBassDrumTune()).toBe(75)
+    })
+
+    it('sets tune to 0', () => {
+      engine.setBassDrumTune(0)
+      expect(engine.getBassDrumTune()).toBe(0)
+    })
+
+    it('sets tune to 100', () => {
+      engine.setBassDrumTune(100)
+      expect(engine.getBassDrumTune()).toBe(100)
+    })
+  })
+
+  describe('tuneToHz', () => {
+    it('maps 0 to 40 Hz', () => {
+      expect(tuneToHz(0)).toBe(40)
+    })
+
+    it('maps 100 to 120 Hz', () => {
+      expect(tuneToHz(100)).toBe(120)
+    })
+
+    it('maps 50 to 80 Hz (original default)', () => {
+      expect(tuneToHz(50)).toBe(80)
     })
   })
 })

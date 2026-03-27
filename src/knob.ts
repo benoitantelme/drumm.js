@@ -21,13 +21,23 @@ function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val))
 }
 
-function setKnobAngle(knob: HTMLElement, angle: number): void {
+export type KnobChangeCallback = (param: string, value: number) => void
+
+function setKnobAngle(
+  knob: HTMLElement,
+  angle: number,
+  onChange?: KnobChangeCallback,
+): void {
   knob.style.setProperty('--knob-angle', `${angle}deg`)
-  knob.setAttribute('aria-valuenow', String(angleToValue(angle)))
+  const value = angleToValue(angle)
+  knob.setAttribute('aria-valuenow', String(value))
+  if (onChange) {
+    const param = knob.getAttribute('data-param') ?? ''
+    onChange(param, value)
+  }
 }
 
-function initKnob(knob: HTMLElement): void {
-  // Read initial value from aria attribute
+function initKnob(knob: HTMLElement, onChange?: KnobChangeCallback): void {
   const initialValue = parseInt(knob.getAttribute('aria-valuenow') ?? '50', 10)
   let currentAngle = valueToAngle(initialValue)
   setKnobAngle(knob, currentAngle)
@@ -37,14 +47,14 @@ function initKnob(knob: HTMLElement): void {
 
   // ── Mouse ──────────────────────────────────────────────
   function onMouseMove(e: MouseEvent): void {
-    const delta = dragStartY - e.clientY          // up = positive
+    const delta = dragStartY - e.clientY
     const newAngle = clamp(
       dragStartAngle + delta / DRAG_PX_PER_DEG,
       MIN_ANGLE,
       MAX_ANGLE
     )
     currentAngle = newAngle
-    setKnobAngle(knob, currentAngle)
+    setKnobAngle(knob, currentAngle, onChange)
   }
 
   function onMouseUp(): void {
@@ -75,7 +85,7 @@ function initKnob(knob: HTMLElement): void {
       MAX_ANGLE
     )
     currentAngle = newAngle
-    setKnobAngle(knob, currentAngle)
+    setKnobAngle(knob, currentAngle, onChange)
   }
 
   function onTouchEnd(): void {
@@ -97,16 +107,16 @@ function initKnob(knob: HTMLElement): void {
     if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
       e.preventDefault()
       currentAngle = clamp(currentAngle + step * (270 / 100), MIN_ANGLE, MAX_ANGLE)
-      setKnobAngle(knob, currentAngle)
+      setKnobAngle(knob, currentAngle, onChange)
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
       e.preventDefault()
       currentAngle = clamp(currentAngle - step * (270 / 100), MIN_ANGLE, MAX_ANGLE)
-      setKnobAngle(knob, currentAngle)
+      setKnobAngle(knob, currentAngle, onChange)
     }
   })
 }
 
 /** Attach drag behaviour to all .dm-knob elements inside a root element. */
-export function initKnobs(root: HTMLElement): void {
-  root.querySelectorAll<HTMLElement>('.dm-knob').forEach(initKnob)
+export function initKnobs(root: HTMLElement, onChange?: KnobChangeCallback): void {
+  root.querySelectorAll<HTMLElement>('.dm-knob').forEach(knob => initKnob(knob, onChange))
 }

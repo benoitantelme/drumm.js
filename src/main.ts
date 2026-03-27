@@ -140,10 +140,12 @@ function renderMachine(root: HTMLElement): void {
   root.querySelector<HTMLButtonElement>('#stop-btn')!
     .addEventListener('click', () => audioEngine.stop())
 
-  initKnobs(root)
+  initKnobs(root, (param, value) => {
+    if (param === 'tune') audioEngine.setBassDrumTune(value)
+  })
   initFaders(root)
 
-  // Wire fader directly → audio engine volume
+  // Wire fader directly → engine volume
   const faderEl = root.querySelector<HTMLInputElement>('#fader-bass-drum')
   if (faderEl) {
     faderEl.addEventListener('input', () => {

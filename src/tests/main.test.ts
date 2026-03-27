@@ -137,7 +137,7 @@ describe('render', () => {
       expect(root.querySelector('#fader-bass-drum')).not.toBeNull()
     })
 
-    it('moving the fader updates the bass drum volume in the engine', () => {
+    it('fader at 42 sets engine volume to 42', () => {
       const fader = root.querySelector<HTMLInputElement>('#fader-bass-drum')!
       fader.value = '42'
       fader.dispatchEvent(new Event('input', { bubbles: true }))
@@ -156,6 +156,28 @@ describe('render', () => {
       fader.value = '100'
       fader.dispatchEvent(new Event('input', { bubbles: true }))
       expect(audioEngine.getInstrumentVolume('bass-drum')).toBe(100)
+    })
+
+    it('tune knob defaults to 50 in the engine', () => {
+      expect(audioEngine.getBassDrumTune()).toBe(50)
+    })
+
+    it('tune knob drag upward increases engine tune', () => {
+      const tuneKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="tune"]')!
+      const before = audioEngine.getBassDrumTune()
+      tuneKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getBassDrumTune()).toBeGreaterThan(before)
+    })
+
+    it('tune knob drag downward decreases engine tune', () => {
+      const tuneKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="tune"]')!
+      const before = audioEngine.getBassDrumTune()
+      tuneKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getBassDrumTune()).toBeLessThan(before)
     })
   })
 })
