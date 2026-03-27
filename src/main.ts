@@ -4,6 +4,7 @@
  */
 
 import { AudioEngine } from './AudioEngine.ts'
+import { initKnobs } from './knob.ts'
 
 interface AppInfo {
   name: string
@@ -137,6 +138,8 @@ function renderMachine(root: HTMLElement): void {
 
   root.querySelector<HTMLButtonElement>('#stop-btn')!
     .addEventListener('click', () => audioEngine.stop())
+
+  initKnobs(root)
 }
 
 /** Public entry point — renders the greeting view into the given root element. */
