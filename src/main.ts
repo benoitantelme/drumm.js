@@ -82,15 +82,51 @@ function renderMachine(root: HTMLElement): void {
           <span class="dm-version">v${APP.version}</span>
         </header>
         <div class="dm-machine__stage">
-          <div class="dm-transport">
-            <button class="dm-play-btn" id="play-btn" aria-label="Play">
-              ▶
-            </button>
-            <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">
-              ■
-            </button>
+
+          <div class="dm-instruments">
+            <div class="dm-instrument" id="instrument-bass-drum">
+              <div class="dm-instrument__panel">
+
+                <div class="dm-knob-row">
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Tune</span>
+                    <div class="dm-knob" data-param="tune" role="slider" aria-label="Tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Attack</span>
+                    <div class="dm-knob" data-param="attack" role="slider" aria-label="Attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Decay</span>
+                    <div class="dm-knob" data-param="decay" role="slider" aria-label="Decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dm-fader-row">
+                  <div class="dm-fader-group">
+                    <input class="dm-fader" id="fader-bass-drum" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Bass drum volume" />
+                  </div>
+                </div>
+
+              </div>
+              <span class="dm-instrument__label">Bass Drum</span>
+            </div>
           </div>
-          <span class="dm-machine__placeholder">instruments &amp; sequencer coming soon</span>
+
+          <div class="dm-machine__footer">
+            <div class="dm-transport">
+              <button class="dm-play-btn" id="play-btn" aria-label="Play">▶</button>
+              <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">■</button>
+            </div>
+            <span class="dm-machine__placeholder">instruments &amp; sequencer coming soon</span>
+          </div>
+
         </div>
       </div>
     </div>

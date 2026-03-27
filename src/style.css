@@ -218,18 +218,184 @@ body {
 }
 
 .dm-machine__stage {
-  min-height: clamp(240px, 40vw, 420px);
-  position: relative;
+  min-height: clamp(320px, 50vw, 500px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  justify-content: space-between;
+  padding: 2rem 1.5rem 1.5rem;
 }
 
-.dm-machine__placeholder {
+/* ── Instrument area ───────────────────────────────────── */
+.dm-instruments {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1.5rem;
+  flex: 1;
+  align-items: center;
+}
+
+.dm-instrument {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dm-instrument__panel {
+  background: var(--panel-raise);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 110px;
+}
+
+.dm-instrument__label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-lo);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Knobs ─────────────────────────────────────────────── */
+.dm-knob-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.dm-knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.dm-knob-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dm-knob {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #3a3a3a, #1a1a1a);
+  border: 1px solid #444;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  position: relative;
+  cursor: pointer;
+  /* Default rotation: -135deg = fully left (min), +135deg = fully right (max)
+     50% value = -45deg from top = roughly 7 o'clock pointing towards 8 */
+  --knob-angle: -45deg;
+  transform: rotate(var(--knob-angle));
+  transition: box-shadow 0.1s;
+}
+
+.dm-knob:hover {
+  box-shadow:
+    0 2px 8px rgba(0,0,0,.7),
+    0 0 0 1px var(--accent-dim),
+    inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.dm-knob__indicator {
   position: absolute;
-  bottom: 2rem;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/* ── Fader ─────────────────────────────────────────────── */
+.dm-fader-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.dm-fader-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dm-fader {
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 28px;
+  height: 70px;
+  cursor: pointer;
+  accent-color: var(--accent);
+  background: transparent;
+}
+
+/* Webkit track */
+.dm-fader::-webkit-slider-runnable-track {
+  width: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Webkit thumb */
+.dm-fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 10px;
+  background: var(--panel-raise);
+  border: 2px solid var(--text-lo);
+  border-radius: 2px;
+  cursor: pointer;
+  margin-left: -7px;
+}
+
+.dm-fader::-webkit-slider-thumb:hover {
+  border-color: var(--text-hi);
+}
+
+/* Firefox track + thumb */
+.dm-fader::-moz-range-track {
+  width: 4px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.dm-fader::-moz-range-thumb {
+  width: 18px;
+  height: 10px;
+  background: var(--panel-raise);
+  border: 2px solid var(--text-lo);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+/* ── Machine footer (transport + placeholder) ──────────── */
+.dm-machine__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  width: 100%;
 }
 
 /* ── Transport ─────────────────────────────────────────── */
@@ -274,7 +440,7 @@ body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   border: 1px dashed var(--border);
-  padding: 1rem 2rem;
+  padding: 0.6rem 1.5rem;
   border-radius: var(--radius-sm);
 }
 
