@@ -105,4 +105,35 @@ describe('render', () => {
     root.querySelector<HTMLButtonElement>('#stop-btn')!.click()
     expect(audioEngine.isPlaying).toBe(false)
   })
+
+  describe('bass drum instrument panel', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    it('renders the bass drum instrument panel', () => {
+      expect(root.querySelector('#instrument-bass-drum')).not.toBeNull()
+    })
+
+    it('renders exactly three knobs', () => {
+      const knobs = root.querySelectorAll('#instrument-bass-drum .dm-knob')
+      expect(knobs).toHaveLength(3)
+    })
+
+    it('renders a Tune knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="tune"]')).not.toBeNull()
+    })
+
+    it('renders an Attack knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="attack"]')).not.toBeNull()
+    })
+
+    it('renders a Decay knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="decay"]')).not.toBeNull()
+    })
+
+    it('renders the volume fader', () => {
+      expect(root.querySelector('#fader-bass-drum')).not.toBeNull()
+    })
+  })
 })

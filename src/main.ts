@@ -5,6 +5,7 @@
 
 import { AudioEngine } from './AudioEngine.ts'
 import { initKnobs } from './knob.ts'
+import { initFaders } from './fader.ts'
 
 interface AppInfo {
   name: string
@@ -140,6 +141,7 @@ function renderMachine(root: HTMLElement): void {
     .addEventListener('click', () => audioEngine.stop())
 
   initKnobs(root)
+  initFaders(root)
 }
 
 /** Public entry point — renders the greeting view into the given root element. */

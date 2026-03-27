@@ -9,11 +9,11 @@ const MIN_ANGLE = -135
 const MAX_ANGLE =  135
 const DRAG_PX_PER_DEG = 1.5  // pixels of vertical drag per degree of rotation
 
-function valueToAngle(value: number): number {
+export function valueToAngle(value: number): number {
   return MIN_ANGLE + (value / 100) * (MAX_ANGLE - MIN_ANGLE)
 }
 
-function angleToValue(angle: number): number {
+export function angleToValue(angle: number): number {
   return Math.round((angle - MIN_ANGLE) / (MAX_ANGLE - MIN_ANGLE) * 100)
 }
 
