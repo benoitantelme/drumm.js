@@ -19,12 +19,18 @@ const KICK_BASE_VOLUME  = 0.35   // internal synth level (0–1)
 // Default 50 → 80 Hz (the original hardcoded value, midpoint of range).
 const TUNE_MIN_HZ = 40
 const TUNE_MAX_HZ = 120
+const SNARE_TUNE_MIN_HZ = 380
+const SNARE_TUNE_MAX_HZ = 440
 
 const ENVELOPE_FLOOR = 0.0001
 const VOICE_TAIL_S = 0.01
 
 export function tuneToHz(tune: number): number {
   return TUNE_MIN_HZ + (tune / 100) * (TUNE_MAX_HZ - TUNE_MIN_HZ)
+}
+
+export function snareTuneToHz(tune: number): number {
+  return SNARE_TUNE_MIN_HZ + (tune / 100) * (SNARE_TUNE_MAX_HZ - SNARE_TUNE_MIN_HZ)
 }
 
 // Attack: 0–100 maps to 0.003–0.100 s (3 ms → 150 ms).
@@ -135,11 +141,53 @@ function scheduleKick(
   noise.stop(noiseReleaseEnd + VOICE_TAIL_S)
 }
 
+function scheduleSnare(
+  ctx: AudioContext,
+  time: number,
+  gainNode: GainNode,
+  tuneHz: number,
+  attackS: number,
+  decayS: number,
+): void {
+  const envelopeStart = Math.max(time, ctx.currentTime)
+  const attackEnd = envelopeStart + attackS
+  const decayEnd = attackEnd + decayS
+  const noiseReleaseEnd = envelopeStart + Math.min(0.12, decayS * 0.6 + 0.04)
+
+  const toneOsc = ctx.createOscillator()
+  const toneGain = ctx.createGain()
+  toneOsc.type = 'triangle'
+  toneOsc.frequency.setValueAtTime(tuneHz, envelopeStart)
+  toneGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
+  toneGain.gain.linearRampToValueAtTime(0.18, attackEnd)
+  toneGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, decayEnd)
+  toneOsc.connect(toneGain)
+  toneGain.connect(gainNode)
+  toneOsc.start(time)
+  toneOsc.stop(decayEnd + VOICE_TAIL_S)
+
+  const noise = ctx.createBufferSource()
+  noise.buffer = createShapedNoiseBuffer(ctx)
+  const noiseFilter = ctx.createBiquadFilter()
+  const noiseGain = ctx.createGain()
+  noiseFilter.type = 'highpass'
+  noiseFilter.frequency.setValueAtTime(2200, envelopeStart)
+  noiseGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
+  noiseGain.gain.linearRampToValueAtTime(0.22, envelopeStart + NOISE_EDGE_FADE_S)
+  noiseGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, noiseReleaseEnd)
+  noise.connect(noiseFilter)
+  noiseFilter.connect(noiseGain)
+  noiseGain.connect(gainNode)
+  noise.start(time)
+  noise.stop(noiseReleaseEnd + VOICE_TAIL_S)
+}
+
 // ── AudioEngine ──────────────────────────────────────────
 
 export class AudioEngine {
   private context:           AudioContext | null = null
   private bassDrumGain:      GainNode | null = null
+  private snareDrumGain:     GainNode | null = null
   private bassDrumVolume:    number = 70   // 0–100, mirrors fader default
   private bassDrumTune:      number = 50   // 0–100, default = 80 Hz
   private bassDrumAttack:    number = 0    // 0–100, default = minimum attack
@@ -147,6 +195,11 @@ export class AudioEngine {
   private nextKickTime:      number = 0
   private _isPlaying:        boolean = false
   private bassDrumDecay:     number = 50
+  private snareDrumVolume:   number = 70
+  private snareDrumTune:     number = 50
+  private snareDrumAttack:   number = 50
+  private snareDrumDecay:    number = 50
+  private nextSnareTime:     number = 0
 
   constructor() {
     this.bassDrumAttack = 50
@@ -157,8 +210,11 @@ export class AudioEngine {
     if (this.context) return
     this.context = new AudioContext()
     this.bassDrumGain = this.context.createGain()
+    this.snareDrumGain = this.context.createGain()
     this.bassDrumGain.gain.value = this.bassDrumVolume / 100
+    this.snareDrumGain.gain.value = this.snareDrumVolume / 100
     this.bassDrumGain.connect(this.context.destination)
+    this.snareDrumGain.connect(this.context.destination)
   }
 
   getContext(): AudioContext | null {
@@ -177,16 +233,25 @@ export class AudioEngine {
   // ── Volume ───────────────────────────────────────────
 
   setInstrumentVolume(instrument: string, value: number): void {
-    if (instrument !== 'bass-drum') return
-    this.bassDrumVolume = value
-    if (this.bassDrumGain) {
-      this.bassDrumGain.gain.value = value / 100
+    if (instrument === 'bass-drum') {
+      this.bassDrumVolume = value
+      if (this.bassDrumGain) {
+        this.bassDrumGain.gain.value = value / 100
+      }
+    }
+
+    if (instrument === 'snare-drum') {
+      this.snareDrumVolume = value
+      if (this.snareDrumGain) {
+        this.snareDrumGain.gain.value = value / 100
+      }
     }
   }
 
   getInstrumentVolume(instrument: string): number | null {
-    if (instrument !== 'bass-drum') return null
-    return this.bassDrumVolume
+    if (instrument === 'bass-drum') return this.bassDrumVolume
+    if (instrument === 'snare-drum') return this.snareDrumVolume
+    return null
   }
 
   // ── Tune ─────────────────────────────────────────────
@@ -218,6 +283,30 @@ export class AudioEngine {
     return this.bassDrumDecay
   }
 
+  setSnareDrumTune(value: number): void {
+    this.snareDrumTune = value
+  }
+
+  getSnareDrumTune(): number {
+    return this.snareDrumTune
+  }
+
+  setSnareDrumAttack(value: number): void {
+    this.snareDrumAttack = value
+  }
+
+  getSnareDrumAttack(): number {
+    return this.snareDrumAttack
+  }
+
+  setSnareDrumDecay(value: number): void {
+    this.snareDrumDecay = value
+  }
+
+  getSnareDrumDecay(): number {
+    return this.snareDrumDecay
+  }
+
   // ── Transport ────────────────────────────────────────
 
   /** Start the bass-drum loop. */
@@ -226,9 +315,10 @@ export class AudioEngine {
     await this.context.resume()
     this._isPlaying = true
     this.nextKickTime = this.context.currentTime
+    this.nextSnareTime = this.context.currentTime + (KICK_INTERVAL_S / 2)
 
     this.schedulerTimer = setInterval(() => {
-      if (!this.context || !this.bassDrumGain) return
+      if (!this.context || !this.bassDrumGain || !this.snareDrumGain) return
       while (this.nextKickTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
         scheduleKick(
           this.context,
@@ -239,6 +329,18 @@ export class AudioEngine {
           decayToSeconds(this.bassDrumDecay),
         )
         this.nextKickTime += KICK_INTERVAL_S
+      }
+
+      while (this.nextSnareTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
+        scheduleSnare(
+          this.context,
+          this.nextSnareTime,
+          this.snareDrumGain,
+          snareTuneToHz(this.snareDrumTune),
+          attackToSeconds(this.snareDrumAttack),
+          decayToSeconds(this.snareDrumDecay),
+        )
+        this.nextSnareTime += KICK_INTERVAL_S
       }
     }, SCHEDULER_TICK_MS)
   }
@@ -268,6 +370,7 @@ export class AudioEngine {
     if (!this.context) return
     await this.context.close()
     this.bassDrumGain = null
+    this.snareDrumGain = null
     this.context = null
   }
 }

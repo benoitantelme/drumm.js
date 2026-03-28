@@ -236,4 +236,52 @@ describe('render', () => {
       expect(audioEngine.getBassDrumDecay()).toBeLessThan(before)
     })
   })
+
+  describe('snare drum instrument panel', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    it('renders the snare drum instrument panel', () => {
+      expect(root.querySelector('#instrument-snare-drum')).not.toBeNull()
+    })
+
+    it('renders the snare drum volume fader', () => {
+      expect(root.querySelector('#fader-snare-drum')).not.toBeNull()
+    })
+
+    it('snare fader at 42 sets engine volume to 42', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-snare-drum')!
+      fader.value = '42'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('snare-drum')).toBe(42)
+    })
+
+    it('snare tune knob drag upward increases engine tune', () => {
+      const tuneKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="snare-tune"]')!
+      const before = audioEngine.getSnareDrumTune()
+      tuneKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getSnareDrumTune()).toBeGreaterThan(before)
+    })
+
+    it('snare attack knob drag upward increases engine attack', () => {
+      const attackKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="snare-attack"]')!
+      const before = audioEngine.getSnareDrumAttack()
+      attackKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getSnareDrumAttack()).toBeGreaterThan(before)
+    })
+
+    it('snare decay knob drag upward increases engine decay', () => {
+      const decayKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="snare-decay"]')!
+      const before = audioEngine.getSnareDrumDecay()
+      decayKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getSnareDrumDecay()).toBeGreaterThan(before)
+    })
+  })
 })

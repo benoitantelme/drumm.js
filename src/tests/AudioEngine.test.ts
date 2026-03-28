@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { AudioEngine, tuneToHz, attackToSeconds, decayToSeconds } from '../AudioEngine.ts'
+import { AudioEngine, tuneToHz, snareTuneToHz, attackToSeconds, decayToSeconds } from '../AudioEngine.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
 // GainNode mock tracks .gain.value so volume tests can read it back.
@@ -117,8 +117,8 @@ describe('AudioEngine', () => {
     vi.advanceTimersByTime(50)
 
     const createdGains = context.createGain.mock.results.map((result) => result.value)
-    const oscGain = createdGains[1]
-    const noiseGain = createdGains[2]
+    const oscGain = createdGains[2]
+    const noiseGain = createdGains[3]
 
     expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
     expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
@@ -169,6 +169,12 @@ describe('AudioEngine', () => {
       engine.init()
       expect(() => engine.setInstrumentVolume('snare', 50)).not.toThrow()
     })
+
+    it('sets snare-drum volume to an arbitrary value', () => {
+      engine.init()
+      engine.setInstrumentVolume('snare-drum', 37)
+      expect(engine.getInstrumentVolume('snare-drum')).toBe(37)
+    })
   })
 
   describe('bass drum tune', () => {
@@ -203,6 +209,20 @@ describe('AudioEngine', () => {
 
     it('maps 50 to 80 Hz (original default)', () => {
       expect(tuneToHz(50)).toBe(80)
+    })
+  })
+
+  describe('snareTuneToHz', () => {
+    it('maps 0 to 380 Hz', () => {
+      expect(snareTuneToHz(0)).toBe(380)
+    })
+
+    it('maps 100 to 440 Hz', () => {
+      expect(snareTuneToHz(100)).toBe(440)
+    })
+
+    it('maps 50 to 410 Hz', () => {
+      expect(snareTuneToHz(50)).toBe(410)
     })
   })
 
@@ -245,6 +265,35 @@ describe('AudioEngine', () => {
     it('sets decay to 100', () => {
       engine.setBassDrumDecay(100)
       expect(engine.getBassDrumDecay()).toBe(100)
+    })
+  })
+
+  describe('snare drum controls', () => {
+    it('defaults snare tune to 50', () => {
+      expect(engine.getSnareDrumTune()).toBe(50)
+    })
+
+    it('defaults snare attack to 50', () => {
+      expect(engine.getSnareDrumAttack()).toBe(50)
+    })
+
+    it('defaults snare decay to 50', () => {
+      expect(engine.getSnareDrumDecay()).toBe(50)
+    })
+
+    it('sets snare tune', () => {
+      engine.setSnareDrumTune(75)
+      expect(engine.getSnareDrumTune()).toBe(75)
+    })
+
+    it('sets snare attack', () => {
+      engine.setSnareDrumAttack(25)
+      expect(engine.getSnareDrumAttack()).toBe(25)
+    })
+
+    it('sets snare decay', () => {
+      engine.setSnareDrumDecay(80)
+      expect(engine.getSnareDrumDecay()).toBe(80)
     })
   })
 
