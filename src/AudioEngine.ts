@@ -32,13 +32,30 @@ export function tuneToHz(tune: number): number {
 // Default 50 → ~76.5 ms.
 const ATTACK_MIN_S = 0.003
 const ATTACK_MAX_S = 0.150
-const NOISE_DURATION_S = 0.012
+const DECAY_MIN_S = 0.050
+const DECAY_MAX_S = 0.500
+const NOISE_DURATION_S = 0.008
 const NOISE_EDGE_FADE_S = 0.002
-const NOISE_PEAK_GAIN = 0.08
+const NOISE_MIN_GAIN = 0.005
+const NOISE_MAX_GAIN = 0.03
 const NOISE_HIGHPASS_HZ = 1800
+const KICK_END_HZ_MIN = 45
+const KICK_END_HZ_MAX = 70
 
 export function attackToSeconds(attack: number): number {
   return ATTACK_MIN_S + (attack / 100) * (ATTACK_MAX_S - ATTACK_MIN_S)
+}
+
+export function decayToSeconds(decay: number): number {
+  return DECAY_MIN_S + (decay / 100) * (DECAY_MAX_S - DECAY_MIN_S)
+}
+
+function attackSecondsToMix(attackS: number): number {
+  return Math.max(0, Math.min(1, (attackS - ATTACK_MIN_S) / (ATTACK_MAX_S - ATTACK_MIN_S)))
+}
+
+function decaySecondsToMix(decayS: number): number {
+  return Math.max(0, Math.min(1, (decayS - DECAY_MIN_S) / (DECAY_MAX_S - DECAY_MIN_S)))
 }
 
 function createShapedNoiseBuffer(ctx: AudioContext): AudioBuffer {
@@ -71,22 +88,28 @@ function scheduleKick(
   gainNode: GainNode,
   tuneHz: number,
   attackS: number,
+  decayS: number,
 ): void {
   const envelopeStart = Math.max(time, ctx.currentTime)
   const attackEnd = envelopeStart + attackS
-  const oscReleaseEnd = envelopeStart + 0.4
+  const decayEnd = attackEnd + decayS
+  const oscReleaseEnd = decayEnd
   const noiseRampEnd = envelopeStart + NOISE_EDGE_FADE_S
   const noiseReleaseEnd = envelopeStart + NOISE_DURATION_S
+  const attackMix = attackSecondsToMix(attackS)
+  const decayMix = decaySecondsToMix(decayS)
+  const noisePeakGain = NOISE_MAX_GAIN - ((NOISE_MAX_GAIN - NOISE_MIN_GAIN) * attackMix)
+  const kickEndHz = KICK_END_HZ_MAX - ((KICK_END_HZ_MAX - KICK_END_HZ_MIN) * decayMix)
 
   // ── Pitch sweep oscillator ─────────────────────────────
   const osc = ctx.createOscillator()
   const oscGain = ctx.createGain()
   osc.type = 'sine'
   osc.frequency.setValueAtTime(tuneHz, envelopeStart)
-  osc.frequency.exponentialRampToValueAtTime(30, envelopeStart + 0.35)
+  osc.frequency.exponentialRampToValueAtTime(kickEndHz, decayEnd)
   // Hold the gain at silence until the hit starts so scheduled notes do not click.
   oscGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
-  oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, attackEnd)
+  oscGain.gain.linearRampToValueAtTime(KICK_BASE_VOLUME, attackEnd)
   oscGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, oscReleaseEnd)
   osc.connect(oscGain)
   oscGain.connect(gainNode)
@@ -103,7 +126,7 @@ function scheduleKick(
   noiseFilter.type = 'highpass'
   noiseFilter.frequency.setValueAtTime(NOISE_HIGHPASS_HZ, envelopeStart)
   noiseGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
-  noiseGain.gain.exponentialRampToValueAtTime(NOISE_PEAK_GAIN, noiseRampEnd)
+  noiseGain.gain.linearRampToValueAtTime(noisePeakGain, noiseRampEnd)
   noiseGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, noiseReleaseEnd)
   noise.connect(noiseFilter)
   noiseFilter.connect(noiseGain)
@@ -123,6 +146,11 @@ export class AudioEngine {
   private schedulerTimer:    ReturnType<typeof setInterval> | null = null
   private nextKickTime:      number = 0
   private _isPlaying:        boolean = false
+  private bassDrumDecay:     number = 50
+
+  constructor() {
+    this.bassDrumAttack = 50
+  }
 
   /** Initialise the AudioContext. Must be called from a user gesture. */
   init(): void {
@@ -182,6 +210,14 @@ export class AudioEngine {
     return this.bassDrumAttack
   }
 
+  setBassDrumDecay(value: number): void {
+    this.bassDrumDecay = value
+  }
+
+  getBassDrumDecay(): number {
+    return this.bassDrumDecay
+  }
+
   // ── Transport ────────────────────────────────────────
 
   /** Start the bass-drum loop. */
@@ -200,6 +236,7 @@ export class AudioEngine {
           this.bassDrumGain,
           tuneToHz(this.bassDrumTune),
           attackToSeconds(this.bassDrumAttack),
+          decayToSeconds(this.bassDrumDecay),
         )
         this.nextKickTime += KICK_INTERVAL_S
       }

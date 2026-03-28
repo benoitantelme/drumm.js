@@ -6,7 +6,12 @@ import { getLogoHTML, APP, render, audioEngine } from '../main.ts'
 // setInstrumentVolume and getInstrumentVolume operate on the same node.
 function makeMockAudioContext() {
   const sharedGain = {
-    gain: { value: 1, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    gain: {
+      value: 1,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
     connect: vi.fn(),
   }
   return {
@@ -185,8 +190,8 @@ describe('render', () => {
       expect(audioEngine.getBassDrumTune()).toBeLessThan(before)
     })
 
-    it('attack knob defaults to 0 in the engine', () => {
-      expect(audioEngine.getBassDrumAttack()).toBe(0)
+    it('attack knob defaults to 50 in the engine', () => {
+      expect(audioEngine.getBassDrumAttack()).toBe(50)
     })
 
     it('attack knob drag upward increases engine attack', () => {
@@ -206,6 +211,29 @@ describe('render', () => {
       window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
       window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
       expect(audioEngine.getBassDrumAttack()).toBeLessThan(before)
+    })
+
+    it('decay knob defaults to 50 in the engine', () => {
+      expect(audioEngine.getBassDrumDecay()).toBe(50)
+    })
+
+    it('decay knob drag upward increases engine decay', () => {
+      const decayKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="decay"]')!
+      const before = audioEngine.getBassDrumDecay()
+      decayKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getBassDrumDecay()).toBeGreaterThan(before)
+    })
+
+    it('decay knob drag downward decreases engine decay', () => {
+      audioEngine.setBassDrumDecay(50)
+      const decayKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="decay"]')!
+      const before = audioEngine.getBassDrumDecay()
+      decayKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getBassDrumDecay()).toBeLessThan(before)
     })
   })
 })

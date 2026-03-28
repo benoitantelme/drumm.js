@@ -1,11 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { AudioEngine, tuneToHz, attackToSeconds } from '../AudioEngine.ts'
+import { AudioEngine, tuneToHz, attackToSeconds, decayToSeconds } from '../AudioEngine.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
 // GainNode mock tracks .gain.value so volume tests can read it back.
 function makeMockGainNode() {
   return {
-    gain: { value: 1, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    gain: {
+      value: 1,
+      setValueAtTime: vi.fn(),
+      linearRampToValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
     connect: vi.fn(),
   }
 }
@@ -202,8 +207,8 @@ describe('AudioEngine', () => {
   })
 
   describe('bass drum attack', () => {
-    it('defaults to 0', () => {
-      expect(engine.getBassDrumAttack()).toBe(0)
+    it('defaults to 50', () => {
+      expect(engine.getBassDrumAttack()).toBe(50)
     })
 
     it('sets attack to an arbitrary value', () => {
@@ -222,6 +227,27 @@ describe('AudioEngine', () => {
     })
   })
 
+  describe('bass drum decay', () => {
+    it('defaults to 50', () => {
+      expect(engine.getBassDrumDecay()).toBe(50)
+    })
+
+    it('sets decay to an arbitrary value', () => {
+      engine.setBassDrumDecay(60)
+      expect(engine.getBassDrumDecay()).toBe(60)
+    })
+
+    it('sets decay to 0', () => {
+      engine.setBassDrumDecay(0)
+      expect(engine.getBassDrumDecay()).toBe(0)
+    })
+
+    it('sets decay to 100', () => {
+      engine.setBassDrumDecay(100)
+      expect(engine.getBassDrumDecay()).toBe(100)
+    })
+  })
+
   describe('attackToSeconds', () => {
     it('maps 0 to minimum 0.003 s', () => {
       expect(attackToSeconds(0)).toBeCloseTo(0.003)
@@ -237,6 +263,24 @@ describe('AudioEngine', () => {
 
     it('always returns a value >= minimum to prevent clicking', () => {
       expect(attackToSeconds(0)).toBeGreaterThanOrEqual(0.003)
+    })
+  })
+
+  describe('decayToSeconds', () => {
+    it('maps 0 to minimum 0.010 s', () => {
+      expect(decayToSeconds(0)).toBeCloseTo(0.05)
+    })
+
+    it('maps 100 to maximum 0.300 s', () => {
+      expect(decayToSeconds(100)).toBeCloseTo(0.500)
+    })
+
+    it('maps 50 to midpoint 0.155 s', () => {
+      expect(decayToSeconds(50)).toBeCloseTo(0.275)
+    })
+
+    it('always returns a value >= minimum', () => {
+      expect(decayToSeconds(0)).toBeGreaterThanOrEqual(0.05)
     })
   })
 })

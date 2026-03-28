@@ -143,6 +143,7 @@ function renderMachine(root: HTMLElement): void {
   initKnobs(root, (param, value) => {
     if (param === 'tune')   audioEngine.setBassDrumTune(value)
     if (param === 'attack') audioEngine.setBassDrumAttack(value)
+    if (param === 'decay')  audioEngine.setBassDrumDecay(value)
   })
   initFaders(root)
 
