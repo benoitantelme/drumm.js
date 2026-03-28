@@ -30,15 +30,20 @@ function scheduleKick(
   gainNode: GainNode,
   tuneHz: number,
 ): void {
+  // The ramp must always target a future time relative to currentTime,
+  // not relative to 'time' which may already be in the past.
+  // We keep 'time' for osc.start() so rhythm stays accurate.
+  const rampEnd = ctx.currentTime + 0.003
+
   // ── Pitch sweep oscillator ─────────────────────────────
   const osc = ctx.createOscillator()
   const oscGain = ctx.createGain()
   osc.type = 'sine'
   osc.frequency.setValueAtTime(tuneHz, time)
   osc.frequency.exponentialRampToValueAtTime(30, time + 0.35)
-  // Ramp in from near-zero over 2 ms to avoid a hard-start click
-  oscGain.gain.setValueAtTime(0.0001, time)
-  oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, time + 0.002)
+  // Ramp in from near-zero to avoid a hard-start click
+  oscGain.gain.setValueAtTime(0.0001, ctx.currentTime)
+  oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, rampEnd)
   oscGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4)
   osc.connect(oscGain)
   oscGain.connect(gainNode)
@@ -54,9 +59,8 @@ function scheduleKick(
   const noise = ctx.createBufferSource()
   noise.buffer = buffer
   const noiseGain = ctx.createGain()
-  // Same ramp-in treatment for the noise burst
-  noiseGain.gain.setValueAtTime(0.0001, time)
-  noiseGain.gain.exponentialRampToValueAtTime(0.3, time + 0.002)
+  noiseGain.gain.setValueAtTime(0.0001, ctx.currentTime)
+  noiseGain.gain.exponentialRampToValueAtTime(0.3, rampEnd)
   noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05)
   noise.connect(noiseGain)
   noiseGain.connect(gainNode)
