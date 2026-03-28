@@ -20,6 +20,9 @@ const KICK_BASE_VOLUME  = 0.35   // internal synth level (0–1)
 const TUNE_MIN_HZ = 40
 const TUNE_MAX_HZ = 120
 
+const ENVELOPE_FLOOR = 0.0001
+const VOICE_TAIL_S = 0.01
+
 export function tuneToHz(tune: number): number {
   return TUNE_MIN_HZ + (tune / 100) * (TUNE_MAX_HZ - TUNE_MIN_HZ)
 }
@@ -29,9 +32,37 @@ export function tuneToHz(tune: number): number {
 // Default 50 → ~76.5 ms.
 const ATTACK_MIN_S = 0.003
 const ATTACK_MAX_S = 0.150
+const NOISE_DURATION_S = 0.012
+const NOISE_EDGE_FADE_S = 0.002
+const NOISE_PEAK_GAIN = 0.08
+const NOISE_HIGHPASS_HZ = 1800
 
 export function attackToSeconds(attack: number): number {
   return ATTACK_MIN_S + (attack / 100) * (ATTACK_MAX_S - ATTACK_MIN_S)
+}
+
+function createShapedNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  const bufferSize = Math.floor(ctx.sampleRate * NOISE_DURATION_S)
+  const fadeSamples = Math.max(1, Math.floor(ctx.sampleRate * NOISE_EDGE_FADE_S))
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+  const data = buffer.getChannelData(0)
+
+  for (let i = 0; i < bufferSize; i++) {
+    let amplitude = 1
+
+    if (i < fadeSamples) {
+      amplitude = i / fadeSamples
+    } else if (i >= bufferSize - fadeSamples) {
+      amplitude = (bufferSize - 1 - i) / fadeSamples
+    }
+
+    data[i] = (Math.random() * 2 - 1) * Math.max(0, amplitude)
+  }
+
+  data[0] = 0
+  data[bufferSize - 1] = 0
+
+  return buffer
 }
 
 function scheduleKick(
@@ -41,45 +72,44 @@ function scheduleKick(
   tuneHz: number,
   attackS: number,
 ): void {
-  // The ramp must always target a future time relative to currentTime,
-  // not relative to 'time' which may already be in the past.
-  // We keep 'time' for osc.start() so rhythm stays accurate.
-  const attackEnd = ctx.currentTime + attackS
+  const envelopeStart = Math.max(time, ctx.currentTime)
+  const attackEnd = envelopeStart + attackS
+  const oscReleaseEnd = envelopeStart + 0.4
+  const noiseRampEnd = envelopeStart + NOISE_EDGE_FADE_S
+  const noiseReleaseEnd = envelopeStart + NOISE_DURATION_S
 
   // ── Pitch sweep oscillator ─────────────────────────────
   const osc = ctx.createOscillator()
   const oscGain = ctx.createGain()
   osc.type = 'sine'
-  osc.frequency.setValueAtTime(tuneHz, time)
-  osc.frequency.exponentialRampToValueAtTime(30, time + 0.35)
-  // Attack: ramp from near-zero to peak over attackS seconds
-  oscGain.gain.setValueAtTime(0.0001, ctx.currentTime)
+  osc.frequency.setValueAtTime(tuneHz, envelopeStart)
+  osc.frequency.exponentialRampToValueAtTime(30, envelopeStart + 0.35)
+  // Hold the gain at silence until the hit starts so scheduled notes do not click.
+  oscGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
   oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, attackEnd)
-  oscGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4)
+  oscGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, oscReleaseEnd)
   osc.connect(oscGain)
   oscGain.connect(gainNode)
   osc.start(time)
-  osc.stop(time + 0.4)
+  osc.stop(oscReleaseEnd + VOICE_TAIL_S)
 
   // ── Noise transient ───────────────────────────────────
   // Noise always uses the minimum ramp — it defines the initial punch
   // character and should not be affected by the attack knob.
-  const noiseRampEnd = ctx.currentTime + ATTACK_MIN_S
-  const bufferSize = ctx.sampleRate * 0.05
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
-  const data = buffer.getChannelData(0)
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1
-
   const noise = ctx.createBufferSource()
-  noise.buffer = buffer
+  noise.buffer = createShapedNoiseBuffer(ctx)
+  const noiseFilter = ctx.createBiquadFilter()
   const noiseGain = ctx.createGain()
-  noiseGain.gain.setValueAtTime(0.0001, ctx.currentTime)
-  noiseGain.gain.exponentialRampToValueAtTime(0.3, noiseRampEnd)
-  noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05)
-  noise.connect(noiseGain)
+  noiseFilter.type = 'highpass'
+  noiseFilter.frequency.setValueAtTime(NOISE_HIGHPASS_HZ, envelopeStart)
+  noiseGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
+  noiseGain.gain.exponentialRampToValueAtTime(NOISE_PEAK_GAIN, noiseRampEnd)
+  noiseGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, noiseReleaseEnd)
+  noise.connect(noiseFilter)
+  noiseFilter.connect(noiseGain)
   noiseGain.connect(gainNode)
   noise.start(time)
-  noise.stop(time + 0.05)
+  noise.stop(noiseReleaseEnd + VOICE_TAIL_S)
 }
 
 // ── AudioEngine ──────────────────────────────────────────

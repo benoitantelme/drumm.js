@@ -26,6 +26,11 @@ function makeMockAudioContext() {
     createBuffer: vi.fn().mockImplementation((_ch: number, length: number) => ({
       getChannelData: () => new Float32Array(length),
     })),
+    createBiquadFilter: vi.fn().mockReturnValue({
+      type: 'lowpass',
+      frequency: { setValueAtTime: vi.fn() },
+      connect: vi.fn(),
+    }),
     createBufferSource: vi.fn().mockReturnValue({
       buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn(),
     }),

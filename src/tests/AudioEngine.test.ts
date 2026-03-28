@@ -33,6 +33,13 @@ class MockAudioContext {
   createBuffer(_ch: number, length: number, _rate: number) {
     return { getChannelData: () => new Float32Array(length) }
   }
+  createBiquadFilter() {
+    return {
+      type: 'lowpass',
+      frequency: { setValueAtTime: vi.fn() },
+      connect: vi.fn(),
+    }
+  }
   createBufferSource() {
     return { buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn() }
   }
@@ -94,6 +101,22 @@ describe('AudioEngine', () => {
     engine.init()
     await engine.play()
     expect(engine.isPlaying).toBe(true)
+  })
+
+  it('anchors future note envelopes to the scheduled hit time', async () => {
+    engine.init()
+    const context = engine.getContext() as unknown as MockAudioContext
+
+    await engine.play()
+    ;(engine as any).nextKickTime = 0.05
+    vi.advanceTimersByTime(50)
+
+    const createdGains = context.createGain.mock.results.map((result) => result.value)
+    const oscGain = createdGains[1]
+    const noiseGain = createdGains[2]
+
+    expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
+    expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
   })
 
   it('isPlaying is false after stop() is called', async () => {
