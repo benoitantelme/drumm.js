@@ -36,14 +36,16 @@ function scheduleKick(
   osc.type = 'sine'
   osc.frequency.setValueAtTime(tuneHz, time)
   osc.frequency.exponentialRampToValueAtTime(30, time + 0.35)
-  oscGain.gain.setValueAtTime(KICK_BASE_VOLUME, time)
-  oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.4)
+  // Ramp in from near-zero over 2 ms to avoid a hard-start click
+  oscGain.gain.setValueAtTime(0.0001, time)
+  oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, time + 0.002)
+  oscGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4)
   osc.connect(oscGain)
   oscGain.connect(gainNode)
   osc.start(time)
   osc.stop(time + 0.4)
 
-  // ── Noise transient (attack click) ────────────────────
+  // ── Noise transient ───────────────────────────────────
   const bufferSize = ctx.sampleRate * 0.05
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
   const data = buffer.getChannelData(0)
@@ -52,8 +54,10 @@ function scheduleKick(
   const noise = ctx.createBufferSource()
   noise.buffer = buffer
   const noiseGain = ctx.createGain()
-  noiseGain.gain.setValueAtTime(0.3, time)
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05)
+  // Same ramp-in treatment for the noise burst
+  noiseGain.gain.setValueAtTime(0.0001, time)
+  noiseGain.gain.exponentialRampToValueAtTime(0.3, time + 0.002)
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05)
   noise.connect(noiseGain)
   noiseGain.connect(gainNode)
   noise.start(time)
