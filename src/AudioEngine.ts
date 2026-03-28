@@ -24,11 +24,11 @@ export function tuneToHz(tune: number): number {
   return TUNE_MIN_HZ + (tune / 100) * (TUNE_MAX_HZ - TUNE_MIN_HZ)
 }
 
-// Attack: 0–100 maps to 0.003–0.060 s (3 ms → 60 ms).
+// Attack: 0–100 maps to 0.003–0.100 s (3 ms → 150 ms).
 // At 0 the minimum 3 ms is kept to prevent clicking.
-// Default 50 → ~31.5 ms.
+// Default 50 → ~76.5 ms.
 const ATTACK_MIN_S = 0.003
-const ATTACK_MAX_S = 0.060
+const ATTACK_MAX_S = 0.150
 
 export function attackToSeconds(attack: number): number {
   return ATTACK_MIN_S + (attack / 100) * (ATTACK_MAX_S - ATTACK_MIN_S)

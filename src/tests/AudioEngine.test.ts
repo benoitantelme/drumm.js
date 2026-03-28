@@ -205,11 +205,11 @@ describe('AudioEngine', () => {
     })
 
     it('maps 100 to maximum 0.060 s', () => {
-      expect(attackToSeconds(100)).toBeCloseTo(0.060)
+      expect(attackToSeconds(100)).toBeCloseTo(0.150)
     })
 
     it('maps 50 to midpoint ~0.0315 s', () => {
-      expect(attackToSeconds(50)).toBeCloseTo(0.0315)
+      expect(attackToSeconds(50)).toBeCloseTo(0.0765)
     })
 
     it('always returns a value >= minimum to prevent clicking', () => {
