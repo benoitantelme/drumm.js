@@ -179,5 +179,28 @@ describe('render', () => {
       window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
       expect(audioEngine.getBassDrumTune()).toBeLessThan(before)
     })
+
+    it('attack knob defaults to 0 in the engine', () => {
+      expect(audioEngine.getBassDrumAttack()).toBe(0)
+    })
+
+    it('attack knob drag upward increases engine attack', () => {
+      const attackKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="attack"]')!
+      const before = audioEngine.getBassDrumAttack()
+      attackKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getBassDrumAttack()).toBeGreaterThan(before)
+    })
+
+    it('attack knob drag downward decreases engine attack', () => {
+      audioEngine.setBassDrumAttack(50)
+      const attackKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="attack"]')!
+      const before = audioEngine.getBassDrumAttack()
+      attackKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getBassDrumAttack()).toBeLessThan(before)
+    })
   })
 })

@@ -24,16 +24,27 @@ export function tuneToHz(tune: number): number {
   return TUNE_MIN_HZ + (tune / 100) * (TUNE_MAX_HZ - TUNE_MIN_HZ)
 }
 
+// Attack: 0–100 maps to 0.003–0.060 s (3 ms → 60 ms).
+// At 0 the minimum 3 ms is kept to prevent clicking.
+// Default 50 → ~31.5 ms.
+const ATTACK_MIN_S = 0.003
+const ATTACK_MAX_S = 0.060
+
+export function attackToSeconds(attack: number): number {
+  return ATTACK_MIN_S + (attack / 100) * (ATTACK_MAX_S - ATTACK_MIN_S)
+}
+
 function scheduleKick(
   ctx: AudioContext,
   time: number,
   gainNode: GainNode,
   tuneHz: number,
+  attackS: number,
 ): void {
   // The ramp must always target a future time relative to currentTime,
   // not relative to 'time' which may already be in the past.
   // We keep 'time' for osc.start() so rhythm stays accurate.
-  const rampEnd = ctx.currentTime + 0.003
+  const attackEnd = ctx.currentTime + attackS
 
   // ── Pitch sweep oscillator ─────────────────────────────
   const osc = ctx.createOscillator()
@@ -41,9 +52,9 @@ function scheduleKick(
   osc.type = 'sine'
   osc.frequency.setValueAtTime(tuneHz, time)
   osc.frequency.exponentialRampToValueAtTime(30, time + 0.35)
-  // Ramp in from near-zero to avoid a hard-start click
+  // Attack: ramp from near-zero to peak over attackS seconds
   oscGain.gain.setValueAtTime(0.0001, ctx.currentTime)
-  oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, rampEnd)
+  oscGain.gain.exponentialRampToValueAtTime(KICK_BASE_VOLUME, attackEnd)
   oscGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4)
   osc.connect(oscGain)
   oscGain.connect(gainNode)
@@ -51,6 +62,9 @@ function scheduleKick(
   osc.stop(time + 0.4)
 
   // ── Noise transient ───────────────────────────────────
+  // Noise always uses the minimum ramp — it defines the initial punch
+  // character and should not be affected by the attack knob.
+  const noiseRampEnd = ctx.currentTime + ATTACK_MIN_S
   const bufferSize = ctx.sampleRate * 0.05
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
   const data = buffer.getChannelData(0)
@@ -60,7 +74,7 @@ function scheduleKick(
   noise.buffer = buffer
   const noiseGain = ctx.createGain()
   noiseGain.gain.setValueAtTime(0.0001, ctx.currentTime)
-  noiseGain.gain.exponentialRampToValueAtTime(0.3, rampEnd)
+  noiseGain.gain.exponentialRampToValueAtTime(0.3, noiseRampEnd)
   noiseGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05)
   noise.connect(noiseGain)
   noiseGain.connect(gainNode)
@@ -75,6 +89,7 @@ export class AudioEngine {
   private bassDrumGain:      GainNode | null = null
   private bassDrumVolume:    number = 70   // 0–100, mirrors fader default
   private bassDrumTune:      number = 50   // 0–100, default = 80 Hz
+  private bassDrumAttack:    number = 0    // 0–100, default = minimum attack
   private schedulerTimer:    ReturnType<typeof setInterval> | null = null
   private nextKickTime:      number = 0
   private _isPlaying:        boolean = false
@@ -118,13 +133,23 @@ export class AudioEngine {
 
   // ── Tune ─────────────────────────────────────────────
 
-  /** Set bass drum tune. value is 0–100 (knob range). */
   setBassDrumTune(value: number): void {
     this.bassDrumTune = value
   }
 
   getBassDrumTune(): number {
     return this.bassDrumTune
+  }
+
+  // ── Attack ───────────────────────────────────────────
+
+  /** Set bass drum attack. value is 0–100 (knob range). */
+  setBassDrumAttack(value: number): void {
+    this.bassDrumAttack = value
+  }
+
+  getBassDrumAttack(): number {
+    return this.bassDrumAttack
   }
 
   // ── Transport ────────────────────────────────────────
@@ -144,6 +169,7 @@ export class AudioEngine {
           this.nextKickTime,
           this.bassDrumGain,
           tuneToHz(this.bassDrumTune),
+          attackToSeconds(this.bassDrumAttack),
         )
         this.nextKickTime += KICK_INTERVAL_S
       }

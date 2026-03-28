@@ -141,7 +141,8 @@ function renderMachine(root: HTMLElement): void {
     .addEventListener('click', () => audioEngine.stop())
 
   initKnobs(root, (param, value) => {
-    if (param === 'tune') audioEngine.setBassDrumTune(value)
+    if (param === 'tune')   audioEngine.setBassDrumTune(value)
+    if (param === 'attack') audioEngine.setBassDrumAttack(value)
   })
   initFaders(root)
 

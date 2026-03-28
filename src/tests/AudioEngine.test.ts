@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { AudioEngine, tuneToHz } from '../AudioEngine.ts'
+import { AudioEngine, tuneToHz, attackToSeconds } from '../AudioEngine.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
 // GainNode mock tracks .gain.value so volume tests can read it back.
@@ -175,6 +175,45 @@ describe('AudioEngine', () => {
 
     it('maps 50 to 80 Hz (original default)', () => {
       expect(tuneToHz(50)).toBe(80)
+    })
+  })
+
+  describe('bass drum attack', () => {
+    it('defaults to 0', () => {
+      expect(engine.getBassDrumAttack()).toBe(0)
+    })
+
+    it('sets attack to an arbitrary value', () => {
+      engine.setBassDrumAttack(60)
+      expect(engine.getBassDrumAttack()).toBe(60)
+    })
+
+    it('sets attack to 0', () => {
+      engine.setBassDrumAttack(0)
+      expect(engine.getBassDrumAttack()).toBe(0)
+    })
+
+    it('sets attack to 100', () => {
+      engine.setBassDrumAttack(100)
+      expect(engine.getBassDrumAttack()).toBe(100)
+    })
+  })
+
+  describe('attackToSeconds', () => {
+    it('maps 0 to minimum 0.003 s', () => {
+      expect(attackToSeconds(0)).toBeCloseTo(0.003)
+    })
+
+    it('maps 100 to maximum 0.060 s', () => {
+      expect(attackToSeconds(100)).toBeCloseTo(0.060)
+    })
+
+    it('maps 50 to midpoint ~0.0315 s', () => {
+      expect(attackToSeconds(50)).toBeCloseTo(0.0315)
+    })
+
+    it('always returns a value >= minimum to prevent clicking', () => {
+      expect(attackToSeconds(0)).toBeGreaterThanOrEqual(0.003)
     })
   })
 })
