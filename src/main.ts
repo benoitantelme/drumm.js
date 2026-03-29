@@ -119,6 +119,74 @@ function renderMachine(root: HTMLElement): void {
               </div>
               <span class="dm-instrument__label">Bass Drum</span>
             </div>
+
+            <div class="dm-instrument" id="instrument-snare-drum">
+              <div class="dm-instrument__panel">
+
+                <div class="dm-knob-row">
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Tune</span>
+                    <div class="dm-knob" data-param="snare-tune" role="slider" aria-label="Snare tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Attack</span>
+                    <div class="dm-knob" data-param="snare-attack" role="slider" aria-label="Snare attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Decay</span>
+                    <div class="dm-knob" data-param="snare-decay" role="slider" aria-label="Snare decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dm-fader-row">
+                  <div class="dm-fader-group">
+                    <input class="dm-fader" id="fader-snare-drum" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Snare drum volume" />
+                  </div>
+                </div>
+
+              </div>
+              <span class="dm-instrument__label">Snare Drum</span>
+            </div>
+
+            <div class="dm-instrument" id="instrument-hi-hat">
+              <div class="dm-instrument__panel">
+
+                <div class="dm-knob-row">
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Tune</span>
+                    <div class="dm-knob" data-param="hi-hat-tune" role="slider" aria-label="Hi-hat tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Attack</span>
+                    <div class="dm-knob" data-param="hi-hat-attack" role="slider" aria-label="Hi-hat attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                  <div class="dm-knob-group">
+                    <span class="dm-knob-label">Decay</span>
+                    <div class="dm-knob" data-param="hi-hat-decay" role="slider" aria-label="Hi-hat decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                      <div class="dm-knob__indicator"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dm-fader-row">
+                  <div class="dm-fader-group">
+                    <input class="dm-fader" id="fader-hi-hat" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Hi-hat volume" />
+                  </div>
+                </div>
+
+              </div>
+              <span class="dm-instrument__label">Hi-Hat</span>
+            </div>
           </div>
 
           <div class="dm-machine__footer">
@@ -126,7 +194,7 @@ function renderMachine(root: HTMLElement): void {
               <button class="dm-play-btn" id="play-btn" aria-label="Play">▶</button>
               <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">■</button>
             </div>
-            <span class="dm-machine__placeholder">instruments &amp; sequencer coming soon</span>
+            <span class="dm-machine__placeholder">sequencer &amp; fxs coming soon</span>
           </div>
 
         </div>
@@ -144,14 +212,34 @@ function renderMachine(root: HTMLElement): void {
     if (param === 'tune')   audioEngine.setBassDrumTune(value)
     if (param === 'attack') audioEngine.setBassDrumAttack(value)
     if (param === 'decay')  audioEngine.setBassDrumDecay(value)
+    if (param === 'snare-tune')   audioEngine.setSnareDrumTune(value)
+    if (param === 'snare-attack') audioEngine.setSnareDrumAttack(value)
+    if (param === 'snare-decay')  audioEngine.setSnareDrumDecay(value)
+    if (param === 'hi-hat-tune')   audioEngine.setHiHatTune(value)
+    if (param === 'hi-hat-attack') audioEngine.setHiHatAttack(value)
+    if (param === 'hi-hat-decay')  audioEngine.setHiHatDecay(value)
   })
   initFaders(root)
 
   // Wire fader directly → engine volume
-  const faderEl = root.querySelector<HTMLInputElement>('#fader-bass-drum')
-  if (faderEl) {
-    faderEl.addEventListener('input', () => {
-      audioEngine.setInstrumentVolume('bass-drum', Number(faderEl.value))
+  const bassDrumFaderEl = root.querySelector<HTMLInputElement>('#fader-bass-drum')
+  if (bassDrumFaderEl) {
+    bassDrumFaderEl.addEventListener('input', () => {
+      audioEngine.setInstrumentVolume('bass-drum', Number(bassDrumFaderEl.value))
+    })
+  }
+
+  const snareDrumFaderEl = root.querySelector<HTMLInputElement>('#fader-snare-drum')
+  if (snareDrumFaderEl) {
+    snareDrumFaderEl.addEventListener('input', () => {
+      audioEngine.setInstrumentVolume('snare-drum', Number(snareDrumFaderEl.value))
+    })
+  }
+
+  const hiHatFaderEl = root.querySelector<HTMLInputElement>('#fader-hi-hat')
+  if (hiHatFaderEl) {
+    hiHatFaderEl.addEventListener('input', () => {
+      audioEngine.setInstrumentVolume('hi-hat', Number(hiHatFaderEl.value))
     })
   }
 }
