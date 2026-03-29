@@ -8,6 +8,9 @@ const ATTACK_MAX_S = 0.030
 // ── Tone body ───────────────────────────────────────────
 const SNARE_TONE_GAIN = 0.25
 const SNARE_TONE_DETUNE_HZ = 30          // second oscillator offset for fatness
+const SNARE_TONE_DECAY_MAX_S = 0.040     // tone snaps off quickly regardless of decay knob
+const SNARE_TONE_DECAY_RATIO = 0.15      // tone decay = min(max, decayS * ratio)
+const SNARE_TONE_TAIL_GAIN = 0.015       // quiet residual that blends into the rattle tail
 
 // ── Crack layer (broadband transient) ──────────────────
 const CRACK_DURATION_S = 0.08
@@ -67,10 +70,16 @@ export function scheduleSnareDrum(
   const decayEnd = attackEnd + decayS
   const attackMix = attackSecondsToMix(attackS)
 
-  // ── Tone: two slightly detuned sines for a fatter body ─
+  // ── Tone: two slightly detuned triangles for a fatter body ─
+  // Fast snap to near-silence, then a very quiet tail that bleeds
+  // under the rattle rather than sustaining as a pitched note.
+  const toneDecayS = Math.min(SNARE_TONE_DECAY_MAX_S, decayS * SNARE_TONE_DECAY_RATIO)
+  const toneSnapEnd = attackEnd + toneDecayS
+
   const toneGain = ctx.createGain()
   toneGain.gain.setValueAtTime(ENVELOPE_FLOOR, envelopeStart)
   toneGain.gain.linearRampToValueAtTime(SNARE_TONE_GAIN, attackEnd)
+  toneGain.gain.exponentialRampToValueAtTime(SNARE_TONE_TAIL_GAIN, toneSnapEnd)
   toneGain.gain.exponentialRampToValueAtTime(ENVELOPE_FLOOR, decayEnd)
   toneGain.connect(gainNode)
 

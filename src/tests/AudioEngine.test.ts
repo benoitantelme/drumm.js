@@ -245,16 +245,16 @@ describe('AudioEngine', () => {
   })
 
   describe('snareTuneToHz', () => {
-    it('maps 0 to 380 Hz', () => {
-      expect(snareTuneToHz(0)).toBe(380)
+    it('maps 0 to 150 Hz', () => {
+      expect(snareTuneToHz(0)).toBe(150)
     })
 
-    it('maps 100 to 440 Hz', () => {
-      expect(snareTuneToHz(100)).toBe(440)
+    it('maps 100 to 280 Hz', () => {
+      expect(snareTuneToHz(100)).toBe(280)
     })
 
-    it('maps 50 to 410 Hz', () => {
-      expect(snareTuneToHz(50)).toBe(410)
+    it('maps 50 to 215 Hz', () => {
+      expect(snareTuneToHz(50)).toBe(215)
     })
   })
 
