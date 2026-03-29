@@ -34,6 +34,7 @@ function makeMockAudioContext() {
     createBiquadFilter: vi.fn().mockReturnValue({
       type: 'lowpass',
       frequency: { setValueAtTime: vi.fn() },
+      Q: { value: 1 },
       connect: vi.fn(),
     }),
     createBufferSource: vi.fn().mockReturnValue({
@@ -282,6 +283,116 @@ describe('render', () => {
       window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
       window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
       expect(audioEngine.getSnareDrumDecay()).toBeGreaterThan(before)
+    })
+  })
+
+  describe('hi-hat instrument panel', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    it('renders the hi-hat instrument panel', () => {
+      expect(root.querySelector('#instrument-hi-hat')).not.toBeNull()
+    })
+
+    it('renders exactly three knobs', () => {
+      const knobs = root.querySelectorAll('#instrument-hi-hat .dm-knob')
+      expect(knobs).toHaveLength(3)
+    })
+
+    it('renders a Tune knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="hi-hat-tune"]')).not.toBeNull()
+    })
+
+    it('renders an Attack knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="hi-hat-attack"]')).not.toBeNull()
+    })
+
+    it('renders a Decay knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="hi-hat-decay"]')).not.toBeNull()
+    })
+
+    it('renders the hi-hat volume fader', () => {
+      expect(root.querySelector('#fader-hi-hat')).not.toBeNull()
+    })
+
+    it('hi-hat fader at 42 sets engine volume to 42', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-hi-hat')!
+      fader.value = '42'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('hi-hat')).toBe(42)
+    })
+
+    it('hi-hat fader at 0 sets engine volume to 0', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-hi-hat')!
+      fader.value = '0'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('hi-hat')).toBe(0)
+    })
+
+    it('hi-hat fader at 100 sets engine volume to 100', () => {
+      const fader = root.querySelector<HTMLInputElement>('#fader-hi-hat')!
+      fader.value = '100'
+      fader.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(audioEngine.getInstrumentVolume('hi-hat')).toBe(100)
+    })
+
+    it('hi-hat tune knob defaults to 50 in the engine', () => {
+      expect(audioEngine.getHiHatTune()).toBe(50)
+    })
+
+    it('hi-hat tune knob drag upward increases engine tune', () => {
+      const tuneKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="hi-hat-tune"]')!
+      const before = audioEngine.getHiHatTune()
+      tuneKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getHiHatTune()).toBeGreaterThan(before)
+    })
+
+    it('hi-hat tune knob drag downward decreases engine tune', () => {
+      const tuneKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="hi-hat-tune"]')!
+      const before = audioEngine.getHiHatTune()
+      tuneKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getHiHatTune()).toBeLessThan(before)
+    })
+
+    it('hi-hat attack knob defaults to 50 in the engine', () => {
+      expect(audioEngine.getHiHatAttack()).toBe(50)
+    })
+
+    it('hi-hat attack knob drag upward increases engine attack', () => {
+      const attackKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="hi-hat-attack"]')!
+      const before = audioEngine.getHiHatAttack()
+      attackKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getHiHatAttack()).toBeGreaterThan(before)
+    })
+
+    it('hi-hat decay knob defaults to 50 in the engine', () => {
+      expect(audioEngine.getHiHatDecay()).toBe(50)
+    })
+
+    it('hi-hat decay knob drag upward increases engine decay', () => {
+      const decayKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="hi-hat-decay"]')!
+      const before = audioEngine.getHiHatDecay()
+      decayKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getHiHatDecay()).toBeGreaterThan(before)
+    })
+
+    it('hi-hat decay knob drag downward decreases engine decay', () => {
+      audioEngine.setHiHatDecay(50)
+      const decayKnob = root.querySelector<HTMLElement>('.dm-knob[data-param="hi-hat-decay"]')!
+      const before = audioEngine.getHiHatDecay()
+      decayKnob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+      expect(audioEngine.getHiHatDecay()).toBeLessThan(before)
     })
   })
 })
