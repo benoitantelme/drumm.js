@@ -193,12 +193,36 @@ function renderMachine(root: HTMLElement): void {
             </div><!-- /.dm-instruments -->
           </div><!-- /.dm-machine__controls -->
 
+          <div class="dm-sequencer" id="sequencer">
+
+            <div class="dm-seq-row" id="seq-bass-drum">
+              <span class="dm-seq-label">BD</span>
+              <div class="dm-seq-steps">
+                ${Array.from({ length: 16 }, (_, i) => `<button class="dm-seq-step" data-instrument="bass-drum" data-step="${i}" aria-label="Bass drum step ${i + 1}" aria-pressed="false"></button>`).join('')}
+              </div>
+            </div>
+
+            <div class="dm-seq-row" id="seq-snare-drum">
+              <span class="dm-seq-label">SD</span>
+              <div class="dm-seq-steps">
+                ${Array.from({ length: 16 }, (_, i) => `<button class="dm-seq-step" data-instrument="snare-drum" data-step="${i}" aria-label="Snare drum step ${i + 1}" aria-pressed="false"></button>`).join('')}
+              </div>
+            </div>
+
+            <div class="dm-seq-row" id="seq-hi-hat">
+              <span class="dm-seq-label">HH</span>
+              <div class="dm-seq-steps">
+                ${Array.from({ length: 16 }, (_, i) => `<button class="dm-seq-step" data-instrument="hi-hat" data-step="${i}" aria-label="Hi-hat step ${i + 1}" aria-pressed="false"></button>`).join('')}
+              </div>
+            </div>
+
+          </div><!-- /.dm-sequencer -->
+
           <div class="dm-machine__footer">
             <div class="dm-transport">
               <button class="dm-play-btn" id="play-btn" aria-label="Play">▶</button>
               <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">■</button>
             </div>
-            <span class="dm-machine__placeholder">sequencer &amp; fxs coming soon</span>
           </div>
 
         </div><!-- /.dm-machine__stage -->
@@ -230,6 +254,15 @@ function renderMachine(root: HTMLElement): void {
     }
   })
   initFaders(root)
+
+  // Wire sequencer step buttons — toggle active state on click
+  root.querySelectorAll<HTMLButtonElement>('.dm-seq-step').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const active = btn.getAttribute('aria-pressed') === 'true'
+      btn.setAttribute('aria-pressed', String(!active))
+      btn.classList.toggle('dm-seq-step--on', !active)
+    })
+  })
 
   // Wire fader directly → engine volume
   const bassDrumFaderEl = root.querySelector<HTMLInputElement>('#fader-bass-drum')

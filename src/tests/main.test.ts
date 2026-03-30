@@ -488,4 +488,120 @@ describe('render', () => {
       expect(audioEngine.getBpm()).toBe(180)
     })
   })
+
+  describe('sequencer', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    // ── Structure ──────────────────────────────────────────
+
+    it('renders the sequencer section', () => {
+      expect(root.querySelector('#sequencer')).not.toBeNull()
+    })
+
+    it('renders a row for the bass drum', () => {
+      expect(root.querySelector('#seq-bass-drum')).not.toBeNull()
+    })
+
+    it('renders a row for the snare drum', () => {
+      expect(root.querySelector('#seq-snare-drum')).not.toBeNull()
+    })
+
+    it('renders a row for the hi-hat', () => {
+      expect(root.querySelector('#seq-hi-hat')).not.toBeNull()
+    })
+
+    it('each row has exactly 16 step buttons', () => {
+      for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
+        const steps = root.querySelectorAll(`${rowId} .dm-seq-step`)
+        expect(steps).toHaveLength(16)
+      }
+    })
+
+    it('renders 48 step buttons in total (3 × 16)', () => {
+      expect(root.querySelectorAll('.dm-seq-step')).toHaveLength(48)
+    })
+
+    // ── Initial state ──────────────────────────────────────
+
+    it('all steps start inactive (aria-pressed="false")', () => {
+      const steps = root.querySelectorAll<HTMLButtonElement>('.dm-seq-step')
+      steps.forEach(step => {
+        expect(step.getAttribute('aria-pressed')).toBe('false')
+      })
+    })
+
+    it('no step starts with the --on class', () => {
+      expect(root.querySelectorAll('.dm-seq-step--on')).toHaveLength(0)
+    })
+
+    // ── Step attributes ────────────────────────────────────
+
+    it('each bass-drum step carries the correct data-instrument', () => {
+      root.querySelectorAll('#seq-bass-drum .dm-seq-step').forEach(btn => {
+        expect(btn.getAttribute('data-instrument')).toBe('bass-drum')
+      })
+    })
+
+    it('each snare-drum step carries the correct data-instrument', () => {
+      root.querySelectorAll('#seq-snare-drum .dm-seq-step').forEach(btn => {
+        expect(btn.getAttribute('data-instrument')).toBe('snare-drum')
+      })
+    })
+
+    it('each hi-hat step carries the correct data-instrument', () => {
+      root.querySelectorAll('#seq-hi-hat .dm-seq-step').forEach(btn => {
+        expect(btn.getAttribute('data-instrument')).toBe('hi-hat')
+      })
+    })
+
+    it('steps are numbered 0–15 via data-step', () => {
+      const steps = root.querySelectorAll('#seq-bass-drum .dm-seq-step')
+      steps.forEach((btn, i) => {
+        expect(btn.getAttribute('data-step')).toBe(String(i))
+      })
+    })
+
+    // ── Toggle behaviour ───────────────────────────────────
+
+    it('clicking an inactive step activates it', () => {
+      const step = root.querySelector<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')!
+      step.click()
+      expect(step.getAttribute('aria-pressed')).toBe('true')
+      expect(step.classList.contains('dm-seq-step--on')).toBe(true)
+    })
+
+    it('clicking an active step deactivates it', () => {
+      const step = root.querySelector<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')!
+      step.click()
+      step.click()
+      expect(step.getAttribute('aria-pressed')).toBe('false')
+      expect(step.classList.contains('dm-seq-step--on')).toBe(false)
+    })
+
+    it('toggling one step does not affect its neighbours', () => {
+      const steps = root.querySelectorAll<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')
+      steps[0].click()
+      expect(steps[1].getAttribute('aria-pressed')).toBe('false')
+      expect(steps[2].getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('steps in different rows are independent', () => {
+      const bdStep = root.querySelector<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')!
+      const sdStep = root.querySelector<HTMLButtonElement>('#seq-snare-drum .dm-seq-step')!
+      bdStep.click()
+      expect(sdStep.getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('multiple steps in the same row can be active simultaneously', () => {
+      const steps = root.querySelectorAll<HTMLButtonElement>('#seq-hi-hat .dm-seq-step')
+      steps[0].click()
+      steps[4].click()
+      steps[8].click()
+      expect(steps[0].getAttribute('aria-pressed')).toBe('true')
+      expect(steps[4].getAttribute('aria-pressed')).toBe('true')
+      expect(steps[8].getAttribute('aria-pressed')).toBe('true')
+    })
+  })
 })

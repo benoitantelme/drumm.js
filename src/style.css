@@ -459,7 +459,75 @@ body {
   cursor: pointer;
 }
 
-/* ── Machine footer (transport + placeholder) ──────────── */
+/* ── Sequencer ─────────────────────────────────────────── */
+.dm-sequencer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.dm-seq-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dm-seq-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  width: 1.8rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.dm-seq-steps {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
+  flex: 1;
+}
+
+.dm-seq-step {
+  aspect-ratio: 1;
+  min-width: 0;
+  background: var(--panel-raise);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.08s, border-color 0.08s, box-shadow 0.08s;
+  /* Group beats visually: slight gap after every 4th step */
+}
+
+.dm-seq-step:nth-child(4n) {
+  margin-right: 3px;
+}
+
+.dm-seq-step:hover {
+  border-color: var(--accent-dim);
+  background: rgba(232, 93, 4, 0.1);
+}
+
+.dm-seq-step--on,
+.dm-seq-step[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 6px rgba(232, 93, 4, 0.5);
+}
+
+.dm-seq-step--on:hover,
+.dm-seq-step[aria-pressed="true"]:hover {
+  background: #ff7a1a;
+  border-color: #ff7a1a;
+}
+
+/* ── Machine footer (transport) ────────────────────────── */
 .dm-machine__footer {
   display: flex;
   flex-direction: column;
@@ -503,17 +571,6 @@ body {
 .dm-play-btn:active,
 .dm-stop-btn:active {
   transform: scale(0.95);
-}
-
-.dm-machine__placeholder {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-lo);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  border: 1px dashed var(--border);
-  padding: 0.6rem 1.5rem;
-  border-radius: var(--radius-sm);
 }
 
 /* ── Responsive ────────────────────────────────────────── */
