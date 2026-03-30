@@ -3,7 +3,7 @@
  * Phase 3: Web Audio API engine wired to machine page
  */
 
-import { AudioEngine } from './AudioEngine.ts'
+import { AudioEngine, DEFAULT_BPM, BPM_MIN, BPM_MAX } from './AudioEngine.ts'
 import { initKnobs } from './knob.ts'
 import { initFaders } from './fader.ts'
 
@@ -85,109 +85,113 @@ function renderMachine(root: HTMLElement): void {
         </header>
         <div class="dm-machine__stage">
 
-          <div class="dm-instruments">
-            <div class="dm-instrument" id="instrument-bass-drum">
-              <div class="dm-instrument__panel">
+          <div class="dm-machine__controls">
 
-                <div class="dm-knob-row">
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Tune</span>
-                    <div class="dm-knob" data-param="tune" role="slider" aria-label="Tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
-                    </div>
-                  </div>
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Attack</span>
-                    <div class="dm-knob" data-param="attack" role="slider" aria-label="Attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
-                    </div>
-                  </div>
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Decay</span>
-                    <div class="dm-knob" data-param="decay" role="slider" aria-label="Decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="dm-fader-row">
-                  <div class="dm-fader-group">
-                    <input class="dm-fader" id="fader-bass-drum" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Bass drum volume" />
-                  </div>
-                </div>
-
+            <div class="dm-bpm-panel">
+              <span class="dm-knob-label">BPM</span>
+              <div class="dm-knob dm-knob--bpm" data-param="bpm" role="slider" aria-label="BPM" aria-valuenow="31" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                <div class="dm-knob__indicator"></div>
               </div>
-              <span class="dm-instrument__label">Bass Drum</span>
+              <span class="dm-bpm-value" id="bpm-display">${DEFAULT_BPM}</span>
             </div>
 
-            <div class="dm-instrument" id="instrument-snare-drum">
-              <div class="dm-instrument__panel">
+            <div class="dm-instruments">
 
-                <div class="dm-knob-row">
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Tune</span>
-                    <div class="dm-knob" data-param="snare-tune" role="slider" aria-label="Snare tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
+              <div class="dm-instrument" id="instrument-bass-drum">
+                <div class="dm-instrument__panel">
+                  <div class="dm-knob-row">
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Tune</span>
+                      <div class="dm-knob" data-param="tune" role="slider" aria-label="Tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Attack</span>
+                      <div class="dm-knob" data-param="attack" role="slider" aria-label="Attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Decay</span>
+                      <div class="dm-knob" data-param="decay" role="slider" aria-label="Decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
                     </div>
                   </div>
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Attack</span>
-                    <div class="dm-knob" data-param="snare-attack" role="slider" aria-label="Snare attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
-                    </div>
-                  </div>
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Decay</span>
-                    <div class="dm-knob" data-param="snare-decay" role="slider" aria-label="Snare decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
+                  <div class="dm-fader-row">
+                    <div class="dm-fader-group">
+                      <input class="dm-fader" id="fader-bass-drum" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Bass drum volume" />
                     </div>
                   </div>
                 </div>
-
-                <div class="dm-fader-row">
-                  <div class="dm-fader-group">
-                    <input class="dm-fader" id="fader-snare-drum" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Snare drum volume" />
-                  </div>
-                </div>
-
+                <span class="dm-instrument__label">Bass Drum</span>
               </div>
-              <span class="dm-instrument__label">Snare Drum</span>
-            </div>
 
-            <div class="dm-instrument" id="instrument-hi-hat">
-              <div class="dm-instrument__panel">
-
-                <div class="dm-knob-row">
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Tune</span>
-                    <div class="dm-knob" data-param="hi-hat-tune" role="slider" aria-label="Hi-hat tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
+              <div class="dm-instrument" id="instrument-snare-drum">
+                <div class="dm-instrument__panel">
+                  <div class="dm-knob-row">
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Tune</span>
+                      <div class="dm-knob" data-param="snare-tune" role="slider" aria-label="Snare tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Attack</span>
+                      <div class="dm-knob" data-param="snare-attack" role="slider" aria-label="Snare attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Decay</span>
+                      <div class="dm-knob" data-param="snare-decay" role="slider" aria-label="Snare decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
                     </div>
                   </div>
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Attack</span>
-                    <div class="dm-knob" data-param="hi-hat-attack" role="slider" aria-label="Hi-hat attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
-                    </div>
-                  </div>
-                  <div class="dm-knob-group">
-                    <span class="dm-knob-label">Decay</span>
-                    <div class="dm-knob" data-param="hi-hat-decay" role="slider" aria-label="Hi-hat decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
-                      <div class="dm-knob__indicator"></div>
+                  <div class="dm-fader-row">
+                    <div class="dm-fader-group">
+                      <input class="dm-fader" id="fader-snare-drum" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Snare drum volume" />
                     </div>
                   </div>
                 </div>
-
-                <div class="dm-fader-row">
-                  <div class="dm-fader-group">
-                    <input class="dm-fader" id="fader-hi-hat" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Hi-hat volume" />
-                  </div>
-                </div>
-
+                <span class="dm-instrument__label">Snare Drum</span>
               </div>
-              <span class="dm-instrument__label">Hi-Hat</span>
-            </div>
-          </div>
+
+              <div class="dm-instrument" id="instrument-hi-hat">
+                <div class="dm-instrument__panel">
+                  <div class="dm-knob-row">
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Tune</span>
+                      <div class="dm-knob" data-param="hi-hat-tune" role="slider" aria-label="Hi-hat tune" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Attack</span>
+                      <div class="dm-knob" data-param="hi-hat-attack" role="slider" aria-label="Hi-hat attack" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                    <div class="dm-knob-group">
+                      <span class="dm-knob-label">Decay</span>
+                      <div class="dm-knob" data-param="hi-hat-decay" role="slider" aria-label="Hi-hat decay" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+                        <div class="dm-knob__indicator"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="dm-fader-row">
+                    <div class="dm-fader-group">
+                      <input class="dm-fader" id="fader-hi-hat" type="range" min="0" max="100" value="70" orient="vertical" aria-label="Hi-hat volume" />
+                    </div>
+                  </div>
+                </div>
+                <span class="dm-instrument__label">Hi-Hat</span>
+              </div>
+
+            </div><!-- /.dm-instruments -->
+          </div><!-- /.dm-machine__controls -->
 
           <div class="dm-machine__footer">
             <div class="dm-transport">
@@ -197,9 +201,9 @@ function renderMachine(root: HTMLElement): void {
             <span class="dm-machine__placeholder">sequencer &amp; fxs coming soon</span>
           </div>
 
-        </div>
-      </div>
-    </div>
+        </div><!-- /.dm-machine__stage -->
+      </div><!-- /.dm-machine__body -->
+    </div><!-- /.dm-machine -->
   `
 
   root.querySelector<HTMLButtonElement>('#play-btn')!
@@ -218,6 +222,12 @@ function renderMachine(root: HTMLElement): void {
     if (param === 'hi-hat-tune')   audioEngine.setHiHatTune(value)
     if (param === 'hi-hat-attack') audioEngine.setHiHatAttack(value)
     if (param === 'hi-hat-decay')  audioEngine.setHiHatDecay(value)
+    if (param === 'bpm') {
+      const bpm = Math.round(BPM_MIN + (value / 100) * (BPM_MAX - BPM_MIN))
+      audioEngine.setBpm(bpm)
+      const display = root.querySelector<HTMLElement>('#bpm-display')
+      if (display) display.textContent = String(bpm)
+    }
   })
   initFaders(root)
 

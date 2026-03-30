@@ -16,7 +16,9 @@ export { hiHatTuneToHz } from './instruments/HiHat.ts'
 
 export type AudioEngineState = 'uninitialized' | 'running' | 'suspended' | 'closed'
 
-const KICK_INTERVAL_S = 0.667
+export const DEFAULT_BPM = 90
+export const BPM_MIN = 40
+export const BPM_MAX = 200
 const SCHEDULE_AHEAD_S = 0.1
 const SCHEDULER_TICK_MS = 50
 const ATTACK_MIN_S = 0.003
@@ -61,6 +63,7 @@ export class AudioEngine {
   private hiHatTune = 50
   private hiHatAttack = 50
   private hiHatDecay = 50
+  private _bpm = DEFAULT_BPM
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
   private nextKickTime = 0
   private nextSnareTime = 0
@@ -150,12 +153,13 @@ export class AudioEngine {
     await this.context.resume()
     this._isPlaying = true
     this.nextKickTime = this.context.currentTime
-    this.nextSnareTime = this.context.currentTime + (KICK_INTERVAL_S / 2)
-    // Hi-hat plays on every eighth note (twice per kick interval)
+    this.nextSnareTime = this.context.currentTime + (60 / this._bpm) / 2
+    // Hi-hat plays on every eighth note (twice per beat interval)
     this.nextHiHatTime = this.context.currentTime
 
     this.schedulerTimer = setInterval(() => {
       if (!this.context || !this.bassDrumGain || !this.snareDrumGain || !this.hiHatGain) return
+      const beatS = 60 / this._bpm
 
       while (this.nextKickTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
         scheduleBassDrum(
@@ -166,7 +170,7 @@ export class AudioEngine {
           attackToSeconds(this.bassDrumAttack),
           decayToSeconds(this.bassDrumDecay),
         )
-        this.nextKickTime += KICK_INTERVAL_S
+        this.nextKickTime += beatS
       }
 
       while (this.nextSnareTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
@@ -178,7 +182,7 @@ export class AudioEngine {
           attackToSeconds(this.snareDrumAttack),
           decayToSeconds(this.snareDrumDecay),
         )
-        this.nextSnareTime += KICK_INTERVAL_S
+        this.nextSnareTime += beatS
       }
 
       while (this.nextHiHatTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
@@ -190,10 +194,13 @@ export class AudioEngine {
           hiHatAttackToSeconds(this.hiHatAttack),
           hiHatDecayToSeconds(this.hiHatDecay),
         )
-        this.nextHiHatTime += KICK_INTERVAL_S / 2
+        this.nextHiHatTime += beatS / 2
       }
     }, SCHEDULER_TICK_MS)
   }
+
+  getBpm(): number { return this._bpm }
+  setBpm(value: number): void { this._bpm = Math.max(BPM_MIN, Math.min(BPM_MAX, value)) }
 
   stop(): void {
     if (!this._isPlaying) return
