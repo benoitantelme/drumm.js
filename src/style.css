@@ -502,15 +502,15 @@ body {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background 0.08s, border-color 0.08s, box-shadow 0.08s;
-  /* Group beats visually: slight gap after every 4th step */
 }
 
-.dm-seq-step:nth-child(4n) {
-  margin-right: 3px;
+/* First step of every beat group (1, 5, 9, 13) gets an accent border */
+.dm-seq-step:nth-child(4n+1) {
+  border-color: var(--accent-dim);
 }
 
 .dm-seq-step:hover {
-  border-color: var(--accent-dim);
+  border-color: var(--accent);
   background: rgba(232, 93, 4, 0.1);
 }
 
