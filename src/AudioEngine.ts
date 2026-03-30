@@ -17,8 +17,8 @@ export { hiHatTuneToHz } from './instruments/HiHat.ts'
 export type AudioEngineState = 'uninitialized' | 'running' | 'suspended' | 'closed'
 
 export const DEFAULT_BPM = 90
-export const BPM_MIN = 40
-export const BPM_MAX = 200
+export const BPM_MIN = 60
+export const BPM_MAX = 180
 const SCHEDULE_AHEAD_S = 0.1
 const SCHEDULER_TICK_MS = 50
 const ATTACK_MIN_S = 0.003

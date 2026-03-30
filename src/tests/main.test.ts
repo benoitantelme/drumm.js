@@ -395,4 +395,97 @@ describe('render', () => {
       expect(audioEngine.getHiHatDecay()).toBeLessThan(before)
     })
   })
+
+  describe('BPM knob', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    it('renders the BPM knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="bpm"]')).not.toBeNull()
+    })
+
+    it('renders the BPM display with the default value', () => {
+      const display = root.querySelector<HTMLElement>('#bpm-display')
+      expect(display).not.toBeNull()
+      expect(display!.textContent).toBe('90')
+    })
+
+    it('engine BPM defaults to 90', () => {
+      expect(audioEngine.getBpm()).toBe(90)
+    })
+
+    it('dragging the BPM knob upward increases the engine BPM', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      const before = audioEngine.getBpm()
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeGreaterThan(before)
+    })
+
+    it('dragging the BPM knob downward decreases the engine BPM', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      const before = audioEngine.getBpm()
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeLessThan(before)
+    })
+
+    it('dragging the BPM knob updates the display label', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      const display = root.querySelector<HTMLElement>('#bpm-display')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(display.textContent).not.toBe('90')
+      expect(Number(display.textContent)).toBeGreaterThan(90)
+    })
+
+    it('BPM display shows an integer', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 60,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      const display = root.querySelector<HTMLElement>('#bpm-display')!
+      expect(Number.isInteger(Number(display.textContent))).toBe(true)
+    })
+
+    it('engine BPM never goes below 60', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 0,   bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 999, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeGreaterThanOrEqual(60)
+    })
+
+    it('engine BPM never exceeds 180', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 999, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 0,   bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeLessThanOrEqual(180)
+    })
+
+    it('setBpm(60) sets exactly 60', () => {
+      audioEngine.setBpm(60)
+      expect(audioEngine.getBpm()).toBe(60)
+    })
+
+    it('setBpm(180) sets exactly 180', () => {
+      audioEngine.setBpm(180)
+      expect(audioEngine.getBpm()).toBe(180)
+    })
+
+    it('setBpm below 60 is clamped to 60', () => {
+      audioEngine.setBpm(0)
+      expect(audioEngine.getBpm()).toBe(60)
+    })
+
+    it('setBpm above 180 is clamped to 180', () => {
+      audioEngine.setBpm(999)
+      expect(audioEngine.getBpm()).toBe(180)
+    })
+  })
 })

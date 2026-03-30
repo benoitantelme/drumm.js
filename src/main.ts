@@ -89,7 +89,7 @@ function renderMachine(root: HTMLElement): void {
 
             <div class="dm-bpm-panel">
               <span class="dm-knob-label">BPM</span>
-              <div class="dm-knob dm-knob--bpm" data-param="bpm" role="slider" aria-label="BPM" aria-valuenow="31" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+              <div class="dm-knob dm-knob--bpm" data-param="bpm" role="slider" aria-label="BPM" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" tabindex="0">
                 <div class="dm-knob__indicator"></div>
               </div>
               <span class="dm-bpm-value" id="bpm-display">${DEFAULT_BPM}</span>

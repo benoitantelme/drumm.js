@@ -8,6 +8,9 @@ import {
   decayToSeconds,
   hiHatAttackToSeconds,
   hiHatDecayToSeconds,
+  DEFAULT_BPM,
+  BPM_MIN,
+  BPM_MAX,
 } from '../AudioEngine.ts'
 
 // ── Mock AudioContext ────────────────────────────────────
@@ -471,6 +474,62 @@ describe('AudioEngine', () => {
 
     it('always returns a value >= minimum', () => {
       expect(hiHatDecayToSeconds(0)).toBeGreaterThanOrEqual(0.020)
+    })
+  })
+
+  describe('BPM constants', () => {
+    it('BPM_MIN is 60', () => {
+      expect(BPM_MIN).toBe(60)
+    })
+
+    it('BPM_MAX is 180', () => {
+      expect(BPM_MAX).toBe(180)
+    })
+
+    it('DEFAULT_BPM is within the allowed range', () => {
+      expect(DEFAULT_BPM).toBeGreaterThanOrEqual(BPM_MIN)
+      expect(DEFAULT_BPM).toBeLessThanOrEqual(BPM_MAX)
+    })
+  })
+
+  describe('getBpm / setBpm', () => {
+    it('defaults to DEFAULT_BPM (90)', () => {
+      expect(engine.getBpm()).toBe(90)
+    })
+
+    it('sets an arbitrary value within range', () => {
+      engine.setBpm(120)
+      expect(engine.getBpm()).toBe(120)
+    })
+
+    it('sets the minimum boundary value 60', () => {
+      engine.setBpm(60)
+      expect(engine.getBpm()).toBe(60)
+    })
+
+    it('sets the maximum boundary value 180', () => {
+      engine.setBpm(180)
+      expect(engine.getBpm()).toBe(180)
+    })
+
+    it('clamps values below 60 to 60', () => {
+      engine.setBpm(0)
+      expect(engine.getBpm()).toBe(60)
+    })
+
+    it('clamps values above 180 to 180', () => {
+      engine.setBpm(999)
+      expect(engine.getBpm()).toBe(180)
+    })
+
+    it('clamps negative values to 60', () => {
+      engine.setBpm(-50)
+      expect(engine.getBpm()).toBe(60)
+    })
+
+    it('accepts a mid-range value like 90', () => {
+      engine.setBpm(90)
+      expect(engine.getBpm()).toBe(90)
     })
   })
 })
