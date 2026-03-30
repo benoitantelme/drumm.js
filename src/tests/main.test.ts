@@ -395,4 +395,213 @@ describe('render', () => {
       expect(audioEngine.getHiHatDecay()).toBeLessThan(before)
     })
   })
+
+  describe('BPM knob', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    it('renders the BPM knob', () => {
+      expect(root.querySelector('.dm-knob[data-param="bpm"]')).not.toBeNull()
+    })
+
+    it('renders the BPM display with the default value', () => {
+      const display = root.querySelector<HTMLElement>('#bpm-display')
+      expect(display).not.toBeNull()
+      expect(display!.textContent).toBe('90')
+    })
+
+    it('engine BPM defaults to 90', () => {
+      expect(audioEngine.getBpm()).toBe(90)
+    })
+
+    it('dragging the BPM knob upward increases the engine BPM', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      const before = audioEngine.getBpm()
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeGreaterThan(before)
+    })
+
+    it('dragging the BPM knob downward decreases the engine BPM', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      const before = audioEngine.getBpm()
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 50,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeLessThan(before)
+    })
+
+    it('dragging the BPM knob updates the display label', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      const display = root.querySelector<HTMLElement>('#bpm-display')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 50,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(display.textContent).not.toBe('90')
+      expect(Number(display.textContent)).toBeGreaterThan(90)
+    })
+
+    it('BPM display shows an integer', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 100, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 60,  bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      const display = root.querySelector<HTMLElement>('#bpm-display')!
+      expect(Number.isInteger(Number(display.textContent))).toBe(true)
+    })
+
+    it('engine BPM never goes below 60', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 0,   bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 999, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeGreaterThanOrEqual(60)
+    })
+
+    it('engine BPM never exceeds 180', () => {
+      const knob = root.querySelector<HTMLElement>('.dm-knob[data-param="bpm"]')!
+      knob.dispatchEvent(new MouseEvent('mousedown', { clientY: 999, bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mousemove', { clientY: 0,   bubbles: true }))
+      window.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true }))
+      expect(audioEngine.getBpm()).toBeLessThanOrEqual(180)
+    })
+
+    it('setBpm(60) sets exactly 60', () => {
+      audioEngine.setBpm(60)
+      expect(audioEngine.getBpm()).toBe(60)
+    })
+
+    it('setBpm(180) sets exactly 180', () => {
+      audioEngine.setBpm(180)
+      expect(audioEngine.getBpm()).toBe(180)
+    })
+
+    it('setBpm below 60 is clamped to 60', () => {
+      audioEngine.setBpm(0)
+      expect(audioEngine.getBpm()).toBe(60)
+    })
+
+    it('setBpm above 180 is clamped to 180', () => {
+      audioEngine.setBpm(999)
+      expect(audioEngine.getBpm()).toBe(180)
+    })
+  })
+
+  describe('sequencer', () => {
+    beforeEach(() => {
+      root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    })
+
+    // ── Structure ──────────────────────────────────────────
+
+    it('renders the sequencer section', () => {
+      expect(root.querySelector('#sequencer')).not.toBeNull()
+    })
+
+    it('renders a row for the bass drum', () => {
+      expect(root.querySelector('#seq-bass-drum')).not.toBeNull()
+    })
+
+    it('renders a row for the snare drum', () => {
+      expect(root.querySelector('#seq-snare-drum')).not.toBeNull()
+    })
+
+    it('renders a row for the hi-hat', () => {
+      expect(root.querySelector('#seq-hi-hat')).not.toBeNull()
+    })
+
+    it('each row has exactly 16 step buttons', () => {
+      for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
+        const steps = root.querySelectorAll(`${rowId} .dm-seq-step`)
+        expect(steps).toHaveLength(16)
+      }
+    })
+
+    it('renders 48 step buttons in total (3 × 16)', () => {
+      expect(root.querySelectorAll('.dm-seq-step')).toHaveLength(48)
+    })
+
+    // ── Initial state ──────────────────────────────────────
+
+    it('all steps start inactive (aria-pressed="false")', () => {
+      const steps = root.querySelectorAll<HTMLButtonElement>('.dm-seq-step')
+      steps.forEach(step => {
+        expect(step.getAttribute('aria-pressed')).toBe('false')
+      })
+    })
+
+    it('no step starts with the --on class', () => {
+      expect(root.querySelectorAll('.dm-seq-step--on')).toHaveLength(0)
+    })
+
+    // ── Step attributes ────────────────────────────────────
+
+    it('each bass-drum step carries the correct data-instrument', () => {
+      root.querySelectorAll('#seq-bass-drum .dm-seq-step').forEach(btn => {
+        expect(btn.getAttribute('data-instrument')).toBe('bass-drum')
+      })
+    })
+
+    it('each snare-drum step carries the correct data-instrument', () => {
+      root.querySelectorAll('#seq-snare-drum .dm-seq-step').forEach(btn => {
+        expect(btn.getAttribute('data-instrument')).toBe('snare-drum')
+      })
+    })
+
+    it('each hi-hat step carries the correct data-instrument', () => {
+      root.querySelectorAll('#seq-hi-hat .dm-seq-step').forEach(btn => {
+        expect(btn.getAttribute('data-instrument')).toBe('hi-hat')
+      })
+    })
+
+    it('steps are numbered 0–15 via data-step', () => {
+      const steps = root.querySelectorAll('#seq-bass-drum .dm-seq-step')
+      steps.forEach((btn, i) => {
+        expect(btn.getAttribute('data-step')).toBe(String(i))
+      })
+    })
+
+    // ── Toggle behaviour ───────────────────────────────────
+
+    it('clicking an inactive step activates it', () => {
+      const step = root.querySelector<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')!
+      step.click()
+      expect(step.getAttribute('aria-pressed')).toBe('true')
+      expect(step.classList.contains('dm-seq-step--on')).toBe(true)
+    })
+
+    it('clicking an active step deactivates it', () => {
+      const step = root.querySelector<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')!
+      step.click()
+      step.click()
+      expect(step.getAttribute('aria-pressed')).toBe('false')
+      expect(step.classList.contains('dm-seq-step--on')).toBe(false)
+    })
+
+    it('toggling one step does not affect its neighbours', () => {
+      const steps = root.querySelectorAll<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')
+      steps[0].click()
+      expect(steps[1].getAttribute('aria-pressed')).toBe('false')
+      expect(steps[2].getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('steps in different rows are independent', () => {
+      const bdStep = root.querySelector<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')!
+      const sdStep = root.querySelector<HTMLButtonElement>('#seq-snare-drum .dm-seq-step')!
+      bdStep.click()
+      expect(sdStep.getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('multiple steps in the same row can be active simultaneously', () => {
+      const steps = root.querySelectorAll<HTMLButtonElement>('#seq-hi-hat .dm-seq-step')
+      steps[0].click()
+      steps[4].click()
+      steps[8].click()
+      expect(steps[0].getAttribute('aria-pressed')).toBe('true')
+      expect(steps[4].getAttribute('aria-pressed')).toBe('true')
+      expect(steps[8].getAttribute('aria-pressed')).toBe('true')
+    })
+  })
 })
