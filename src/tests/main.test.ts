@@ -14,9 +14,10 @@ function makeMockAudioContext() {
     },
     connect: vi.fn(),
   }
-  return {
+  const startMs = Date.now()
+  const ctx = {
     state: 'running',
-    currentTime: 0,
+    get currentTime(): number { return (Date.now() - startMs) / 1000 },
     sampleRate: 44100,
     destination: {},
     resume:  vi.fn().mockResolvedValue(undefined),
@@ -41,6 +42,7 @@ function makeMockAudioContext() {
       buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn(),
     }),
   }
+  return ctx
 }
 
 vi.stubGlobal('AudioContext', vi.fn().mockImplementation(makeMockAudioContext))
@@ -602,6 +604,156 @@ describe('render', () => {
       expect(steps[0].getAttribute('aria-pressed')).toBe('true')
       expect(steps[4].getAttribute('aria-pressed')).toBe('true')
       expect(steps[8].getAttribute('aria-pressed')).toBe('true')
+    })
+
+    // ── Playhead cursor ────────────────────────────────────
+
+    it('no step has the --current class before play is pressed', () => {
+      expect(root.querySelectorAll('.dm-seq-step--current')).toHaveLength(0)
+    })
+
+    it('pressing play causes exactly one --current step per row (3 total)', async () => {
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+      expect(root.querySelectorAll('.dm-seq-step--current')).toHaveLength(3)
+    })
+
+    it('--current appears on step 0 of every row when playback starts', async () => {
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+      for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
+        const steps = root.querySelectorAll(`${rowId} .dm-seq-step`)
+        expect(steps[0].classList.contains('dm-seq-step--current')).toBe(true)
+      }
+    })
+
+    it('the cursor advances to a later step after more steps are scheduled', async () => {
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+      const firstStep = root.querySelector<HTMLElement>(
+        '#seq-bass-drum .dm-seq-step--current'
+      )!
+      const firstIndex = Number(firstStep.getAttribute('data-step'))
+      // Advance 500ms so at least 2 more steps (~167ms each at 90 BPM) are scheduled
+      vi.advanceTimersByTime(500)
+      const laterStep = root.querySelector<HTMLElement>(
+        '#seq-bass-drum .dm-seq-step--current'
+      )!
+      const laterIndex = Number(laterStep.getAttribute('data-step'))
+      expect(laterIndex).toBeGreaterThan(firstIndex)
+    })
+
+    it('only one step per row is --current at any time', async () => {
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50 * 3)
+      for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
+        expect(root.querySelectorAll(`${rowId} .dm-seq-step--current`)).toHaveLength(1)
+      }
+    })
+
+    it('--current class is removed from all steps after stop is pressed', async () => {
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+      root.querySelector<HTMLButtonElement>('#stop-btn')!.click()
+      expect(root.querySelectorAll('.dm-seq-step--current')).toHaveLength(0)
+    })
+
+    it('a step can be both --on and --current simultaneously', async () => {
+      // Activate step 0 on bass drum before playing
+      const step0 = root.querySelector<HTMLButtonElement>(
+        '#seq-bass-drum .dm-seq-step[data-step="0"]'
+      )!
+      step0.click()
+      expect(step0.classList.contains('dm-seq-step--on')).toBe(true)
+
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      expect(step0.classList.contains('dm-seq-step--on')).toBe(true)
+      expect(step0.classList.contains('dm-seq-step--current')).toBe(true)
+    })
+
+    it('cursor highlights step 0 when restarting after stop', async () => {
+      // Play for a while then stop
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(500)
+      root.querySelector<HTMLButtonElement>('#stop-btn')!.click()
+
+      // Restart
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
+        const current = root.querySelector(`${rowId} .dm-seq-step--current`)
+        expect(current).not.toBeNull()
+        expect(current!.getAttribute('data-step')).toBe('0')
+      }
+    })
+
+    // ── Step-driven audio ──────────────────────────────────
+
+    it('no instruments are scheduled when all steps are inactive', async () => {
+      const ctx = audioEngine.getContext() as any
+      // All steps off by default — just play and advance
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(500)
+      // Only the 3 master gain nodes created during init(); no voice gains
+      expect(ctx.createGain.mock.calls.length).toBe(3)
+    })
+
+    it('bass drum fires when its step is activated', async () => {
+      // Activate step 0 on bass drum before playing
+      root.querySelector<HTMLButtonElement>(
+        '#seq-bass-drum .dm-seq-step[data-step="0"]'
+      )!.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      // Bass drum uses an oscillator — it should have been created
+      expect(ctx.createOscillator).toHaveBeenCalled()
+    })
+
+    it('snare drum fires when its step is activated', async () => {
+      root.querySelector<HTMLButtonElement>(
+        '#seq-snare-drum .dm-seq-step[data-step="0"]'
+      )!.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      // Snare drum creates oscillators for its tone layer
+      expect(ctx.createOscillator).toHaveBeenCalled()
+    })
+
+    it('hi-hat fires when its step is activated', async () => {
+      root.querySelector<HTMLButtonElement>(
+        '#seq-hi-hat .dm-seq-step[data-step="0"]'
+      )!.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      // Hi-hat uses a buffer source
+      expect(ctx.createBufferSource).toHaveBeenCalled()
+    })
+
+    it('deactivating a step stops that instrument from being scheduled', async () => {
+      const stepBtn = root.querySelector<HTMLButtonElement>(
+        '#seq-bass-drum .dm-seq-step[data-step="0"]'
+      )!
+      // Turn on then off
+      stepBtn.click()
+      stepBtn.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      expect(ctx.createOscillator).not.toHaveBeenCalled()
     })
   })
 })

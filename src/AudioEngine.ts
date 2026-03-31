@@ -64,10 +64,11 @@ export class AudioEngine {
   private hiHatAttack = 50
   private hiHatDecay = 50
   private _bpm = DEFAULT_BPM
+  private _currentStep = 0
+  private _onStep: ((step: number) => void) | null = null
+  private _stepQueue: Array<{ step: number; time: number }> = []
+  private _isStepActive: ((instrument: string, step: number) => boolean) | null = null
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
-  private nextKickTime = 0
-  private nextSnareTime = 0
-  private nextHiHatTime = 0
   private _isPlaying = false
 
   init(): void {
@@ -152,55 +153,76 @@ export class AudioEngine {
     if (!this.context || this._isPlaying) return
     await this.context.resume()
     this._isPlaying = true
-    this.nextKickTime = this.context.currentTime
-    this.nextSnareTime = this.context.currentTime + (60 / this._bpm) / 2
-    // Hi-hat plays on every eighth note (twice per beat interval)
-    this.nextHiHatTime = this.context.currentTime
+    this._currentStep = 0
+    this._stepQueue = []
+
+    // One unified step clock. 16 steps = 1 bar of 4/4.
+    // stepS = one sixteenth note = one quarter beat.
+    const startTime = this.context.currentTime
+    let nextStepTime = startTime
 
     this.schedulerTimer = setInterval(() => {
       if (!this.context || !this.bassDrumGain || !this.snareDrumGain || !this.hiHatGain) return
-      const beatS = 60 / this._bpm
+      const stepS = (60 / this._bpm) / 4
 
-      while (this.nextKickTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleBassDrum(
-          this.context,
-          this.nextKickTime,
-          this.bassDrumGain,
-          tuneToHz(this.bassDrumTune),
-          attackToSeconds(this.bassDrumAttack),
-          decayToSeconds(this.bassDrumDecay),
-        )
-        this.nextKickTime += beatS
+      // ── Schedule ahead ──────────────────────────────────
+      while (nextStepTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
+        const step = this._currentStep
+
+        // Push to queue so the UI callback fires at the correct real-time moment
+        this._stepQueue.push({ step, time: nextStepTime })
+
+        if (this._isStepActive?.('bass-drum', step)) {
+          scheduleBassDrum(
+            this.context, nextStepTime, this.bassDrumGain,
+            tuneToHz(this.bassDrumTune),
+            attackToSeconds(this.bassDrumAttack),
+            decayToSeconds(this.bassDrumDecay),
+          )
+        }
+
+        if (this._isStepActive?.('snare-drum', step)) {
+          scheduleSnareDrum(
+            this.context, nextStepTime, this.snareDrumGain,
+            snareTuneToHz(this.snareDrumTune),
+            attackToSeconds(this.snareDrumAttack),
+            decayToSeconds(this.snareDrumDecay),
+          )
+        }
+
+        if (this._isStepActive?.('hi-hat', step)) {
+          scheduleHiHat(
+            this.context, nextStepTime, this.hiHatGain,
+            hiHatTuneToHz(this.hiHatTune),
+            hiHatAttackToSeconds(this.hiHatAttack),
+            hiHatDecayToSeconds(this.hiHatDecay),
+          )
+        }
+
+        this._currentStep = (step + 1) % 16
+        nextStepTime += stepS
       }
 
-      while (this.nextSnareTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleSnareDrum(
-          this.context,
-          this.nextSnareTime,
-          this.snareDrumGain,
-          snareTuneToHz(this.snareDrumTune),
-          attackToSeconds(this.snareDrumAttack),
-          decayToSeconds(this.snareDrumDecay),
-        )
-        this.nextSnareTime += beatS
-      }
-
-      while (this.nextHiHatTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleHiHat(
-          this.context,
-          this.nextHiHatTime,
-          this.hiHatGain,
-          hiHatTuneToHz(this.hiHatTune),
-          hiHatAttackToSeconds(this.hiHatAttack),
-          hiHatDecayToSeconds(this.hiHatDecay),
-        )
-        this.nextHiHatTime += beatS / 2
+      // ── Drain queue: fire UI callback for steps whose audio time has arrived
+      if (this._onStep) {
+        while (this._stepQueue.length > 0 && this._stepQueue[0].time <= this.context.currentTime) {
+          this._onStep(this._stepQueue.shift()!.step)
+        }
       }
     }, SCHEDULER_TICK_MS)
   }
 
   getBpm(): number { return this._bpm }
   setBpm(value: number): void { this._bpm = Math.max(BPM_MIN, Math.min(BPM_MAX, value)) }
+
+  /** Register a callback fired each time a new beat step is scheduled. */
+  setOnStep(cb: ((step: number) => void) | null): void { this._onStep = cb }
+  getCurrentStep(): number { return this._currentStep }
+
+  /** Register a query called at schedule time to decide if an instrument fires on a step. */
+  setStepActiveQuery(fn: ((instrument: string, step: number) => boolean) | null): void {
+    this._isStepActive = fn
+  }
 
   stop(): void {
     if (!this._isPlaying) return
@@ -209,6 +231,8 @@ export class AudioEngine {
       this.schedulerTimer = null
     }
     this._isPlaying = false
+    this._currentStep = 0
+    this._stepQueue = []
   }
 
   async resume(): Promise<void> {
