@@ -64,6 +64,8 @@ export class AudioEngine {
   private hiHatAttack = 50
   private hiHatDecay = 50
   private _bpm = DEFAULT_BPM
+  private _currentStep = 0
+  private _onStep: ((step: number) => void) | null = null
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
   private nextKickTime = 0
   private nextSnareTime = 0
@@ -156,6 +158,7 @@ export class AudioEngine {
     this.nextSnareTime = this.context.currentTime + (60 / this._bpm) / 2
     // Hi-hat plays on every eighth note (twice per beat interval)
     this.nextHiHatTime = this.context.currentTime
+    this._currentStep = 0
 
     this.schedulerTimer = setInterval(() => {
       if (!this.context || !this.bassDrumGain || !this.snareDrumGain || !this.hiHatGain) return
@@ -170,6 +173,8 @@ export class AudioEngine {
           attackToSeconds(this.bassDrumAttack),
           decayToSeconds(this.bassDrumDecay),
         )
+        if (this._onStep) this._onStep(this._currentStep)
+        this._currentStep = (this._currentStep + 1) % 16
         this.nextKickTime += beatS
       }
 
@@ -202,6 +207,10 @@ export class AudioEngine {
   getBpm(): number { return this._bpm }
   setBpm(value: number): void { this._bpm = Math.max(BPM_MIN, Math.min(BPM_MAX, value)) }
 
+  /** Register a callback fired each time a new beat step is scheduled. */
+  setOnStep(cb: ((step: number) => void) | null): void { this._onStep = cb }
+  getCurrentStep(): number { return this._currentStep }
+
   stop(): void {
     if (!this._isPlaying) return
     if (this.schedulerTimer !== null) {
@@ -209,6 +218,7 @@ export class AudioEngine {
       this.schedulerTimer = null
     }
     this._isPlaying = false
+    this._currentStep = 0
   }
 
   async resume(): Promise<void> {

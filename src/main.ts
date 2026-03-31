@@ -230,11 +230,35 @@ function renderMachine(root: HTMLElement): void {
     </div><!-- /.dm-machine -->
   `
 
+  // ── Sequencer cursor ─────────────────────────────────────
+  // Collect all step buttons grouped by row for fast lookup
+  const seqRows: Record<string, NodeListOf<HTMLButtonElement>> = {
+    'bass-drum':  root.querySelectorAll<HTMLButtonElement>('#seq-bass-drum .dm-seq-step'),
+    'snare-drum': root.querySelectorAll<HTMLButtonElement>('#seq-snare-drum .dm-seq-step'),
+    'hi-hat':     root.querySelectorAll<HTMLButtonElement>('#seq-hi-hat .dm-seq-step'),
+  }
+
+  function clearCursor(): void {
+    root.querySelectorAll('.dm-seq-step--current').forEach(el => {
+      el.classList.remove('dm-seq-step--current')
+    })
+  }
+
+  audioEngine.setOnStep((step: number) => {
+    clearCursor()
+    for (const row of Object.values(seqRows)) {
+      row[step]?.classList.add('dm-seq-step--current')
+    }
+  })
+
   root.querySelector<HTMLButtonElement>('#play-btn')!
     .addEventListener('click', () => audioEngine.play())
 
   root.querySelector<HTMLButtonElement>('#stop-btn')!
-    .addEventListener('click', () => audioEngine.stop())
+    .addEventListener('click', () => {
+      audioEngine.stop()
+      clearCursor()
+    })
 
   initKnobs(root, (param, value) => {
     if (param === 'tune')   audioEngine.setBassDrumTune(value)

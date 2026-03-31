@@ -33,7 +33,8 @@ const mockClose   = vi.fn().mockResolvedValue(undefined)
 
 class MockAudioContext {
   state: string = 'running'
-  currentTime: number = 0
+  private readonly _startMs: number = Date.now()
+  get currentTime(): number { return (Date.now() - this._startMs) / 1000 }
   sampleRate: number = 44100
   destination = {}
   resume  = mockResume
@@ -530,6 +531,89 @@ describe('AudioEngine', () => {
     it('accepts a mid-range value like 90', () => {
       engine.setBpm(90)
       expect(engine.getBpm()).toBe(90)
+    })
+  })
+
+  describe('step sequencer cursor', () => {
+    it('getCurrentStep starts at 0', () => {
+      engine.init()
+      expect(engine.getCurrentStep()).toBe(0)
+    })
+
+    it('onStep callback fires when a beat is scheduled', async () => {
+      engine.init()
+      const cb = vi.fn()
+      engine.setOnStep(cb)
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      expect(cb).toHaveBeenCalled()
+    })
+
+    it('onStep callback is called with step 0 first', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      expect(steps[0]).toBe(0)
+    })
+
+    it('step increments by 1 on each beat', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+      await engine.play()
+      // At 90 BPM a beat is ~667ms; advance ~2s to guarantee multiple beats
+      vi.advanceTimersByTime(2000)
+      expect(steps.length).toBeGreaterThan(1)
+      // Each consecutive step is exactly 1 more than the previous (mod 16)
+      for (let i = 1; i < steps.length; i++) {
+        expect(steps[i]).toBe((steps[i - 1] + 1) % 16)
+      }
+    })
+
+    it('step wraps back to 0 after step 15', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+      await engine.play()
+      // 17 beats at 90 BPM ≈ 11.3s; advance 12s to guarantee a full wrap
+      vi.advanceTimersByTime(12000)
+      expect(steps).toContain(0)
+      expect(steps).toContain(15)
+      const wrapIndex = steps.indexOf(0, 1)   // first wrap back to 0
+      expect(wrapIndex).toBeGreaterThan(-1)
+      expect(steps[wrapIndex - 1]).toBe(15)
+    })
+
+    it('getCurrentStep resets to 0 after stop()', async () => {
+      engine.init()
+      await engine.play()
+      vi.advanceTimersByTime(50 * 3)
+      engine.stop()
+      expect(engine.getCurrentStep()).toBe(0)
+    })
+
+    it('onStep is not called after stop()', async () => {
+      engine.init()
+      const cb = vi.fn()
+      engine.setOnStep(cb)
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      engine.stop()
+      const callsBeforeStop = cb.mock.calls.length
+      vi.advanceTimersByTime(50 * 5)
+      expect(cb.mock.calls.length).toBe(callsBeforeStop)
+    })
+
+    it('setOnStep(null) removes the callback', async () => {
+      engine.init()
+      const cb = vi.fn()
+      engine.setOnStep(cb)
+      engine.setOnStep(null)
+      await engine.play()
+      vi.advanceTimersByTime(50 * 3)
+      expect(cb).not.toHaveBeenCalled()
     })
   })
 })
