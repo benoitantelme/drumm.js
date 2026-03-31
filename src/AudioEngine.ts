@@ -67,6 +67,7 @@ export class AudioEngine {
   private _currentStep = 0
   private _onStep: ((step: number) => void) | null = null
   private _stepQueue: Array<{ step: number; time: number }> = []
+  private _isStepActive: ((instrument: string, step: number) => boolean) | null = null
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
   private _isPlaying = false
 
@@ -157,10 +158,6 @@ export class AudioEngine {
 
     // One unified step clock. 16 steps = 1 bar of 4/4.
     // stepS = one sixteenth note = one quarter beat.
-    // Instruments keep their existing rhythm until the sequencer drives them:
-    //   kick    : every 4 steps (quarter note)
-    //   snare   : every 4 steps, offset by 2 steps (quarter note, on beat 3)
-    //   hi-hat  : every 2 steps (eighth note)
     const startTime = this.context.currentTime
     let nextStepTime = startTime
 
@@ -175,8 +172,7 @@ export class AudioEngine {
         // Push to queue so the UI callback fires at the correct real-time moment
         this._stepQueue.push({ step, time: nextStepTime })
 
-        // Kick on steps 0, 4, 8, 12
-        if (step % 4 === 0) {
+        if (this._isStepActive?.('bass-drum', step)) {
           scheduleBassDrum(
             this.context, nextStepTime, this.bassDrumGain,
             tuneToHz(this.bassDrumTune),
@@ -185,8 +181,7 @@ export class AudioEngine {
           )
         }
 
-        // Snare on steps 2, 6, 10, 14 (half-bar offset = 2 steps)
-        if (step % 4 === 2) {
+        if (this._isStepActive?.('snare-drum', step)) {
           scheduleSnareDrum(
             this.context, nextStepTime, this.snareDrumGain,
             snareTuneToHz(this.snareDrumTune),
@@ -195,8 +190,7 @@ export class AudioEngine {
           )
         }
 
-        // Hi-hat on every even step (eighth note)
-        if (step % 2 === 0) {
+        if (this._isStepActive?.('hi-hat', step)) {
           scheduleHiHat(
             this.context, nextStepTime, this.hiHatGain,
             hiHatTuneToHz(this.hiHatTune),
@@ -224,6 +218,11 @@ export class AudioEngine {
   /** Register a callback fired each time a new beat step is scheduled. */
   setOnStep(cb: ((step: number) => void) | null): void { this._onStep = cb }
   getCurrentStep(): number { return this._currentStep }
+
+  /** Register a query called at schedule time to decide if an instrument fires on a step. */
+  setStepActiveQuery(fn: ((instrument: string, step: number) => boolean) | null): void {
+    this._isStepActive = fn
+  }
 
   stop(): void {
     if (!this._isPlaying) return

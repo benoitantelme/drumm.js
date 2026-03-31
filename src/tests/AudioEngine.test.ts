@@ -122,21 +122,37 @@ describe('AudioEngine', () => {
     expect(engine.isPlaying).toBe(true)
   })
 
-  it('schedules a bass drum hit at the correct audio time', async () => {
+  it('schedules a bass drum hit at the correct audio time when step is active', async () => {
     engine.init()
     const context = engine.getContext() as unknown as MockAudioContext
 
+    // Activate step 0 for bass-drum so the scheduler fires it
+    engine.setStepActiveQuery((instrument, step) =>
+      instrument === 'bass-drum' && step === 0
+    )
+
     await engine.play()
-    // First scheduler tick: currentTime=0, nextStepTime=0 → step 0 fires (kick step).
-    // oscGain and noiseGain are createGain calls 3 and 4 (after the 3 master gains).
     vi.advanceTimersByTime(50)
 
+    // oscGain and noiseGain are createGain calls 3 and 4 (after the 3 master gains)
     const createdGains = context.createGain.mock.results.map((result) => result.value)
     const oscGain = createdGains[3]
     const noiseGain = createdGains[4]
 
     expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
     expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
+  })
+
+  it('does not schedule any instruments when no steps are active', async () => {
+    engine.init()
+    const context = engine.getContext() as unknown as MockAudioContext
+
+    engine.setStepActiveQuery(() => false)
+    await engine.play()
+    vi.advanceTimersByTime(500)
+
+    // Only the 3 master gain nodes should have been created (no instrument voices)
+    expect(context.createGain.mock.calls.length).toBe(3)
   })
 
   it('isPlaying is false after stop() is called', async () => {
@@ -632,6 +648,43 @@ describe('AudioEngine', () => {
       await engine.play()
       vi.advanceTimersByTime(50)
       expect(steps[0]).toBe(0)
+    })
+
+    it('schedules an instrument when its step query returns true', async () => {
+      engine.init()
+      const context = engine.getContext() as unknown as MockAudioContext
+
+      engine.setStepActiveQuery((instrument, step) =>
+        instrument === 'hi-hat' && step === 0
+      )
+      await engine.play()
+      vi.advanceTimersByTime(50)
+
+      // hi-hat uses createBufferSource; if it fired, one source was created
+      expect(context.createBufferSource).toHaveBeenCalled()
+    })
+
+    it('does not schedule an instrument when its step query returns false', async () => {
+      engine.init()
+      const context = engine.getContext() as unknown as MockAudioContext
+
+      engine.setStepActiveQuery(() => false)
+      await engine.play()
+      vi.advanceTimersByTime(500)
+
+      // No instrument voices created beyond the 3 master gain nodes
+      expect(context.createGain.mock.calls.length).toBe(3)
+    })
+
+    it('setStepActiveQuery(null) means no instruments fire', async () => {
+      engine.init()
+      const context = engine.getContext() as unknown as MockAudioContext
+
+      engine.setStepActiveQuery(null)
+      await engine.play()
+      vi.advanceTimersByTime(500)
+
+      expect(context.createGain.mock.calls.length).toBe(3)
     })
   })
 })

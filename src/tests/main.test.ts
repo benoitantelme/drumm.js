@@ -689,5 +689,71 @@ describe('render', () => {
         expect(current!.getAttribute('data-step')).toBe('0')
       }
     })
+
+    // ── Step-driven audio ──────────────────────────────────
+
+    it('no instruments are scheduled when all steps are inactive', async () => {
+      const ctx = audioEngine.getContext() as any
+      // All steps off by default — just play and advance
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(500)
+      // Only the 3 master gain nodes created during init(); no voice gains
+      expect(ctx.createGain.mock.calls.length).toBe(3)
+    })
+
+    it('bass drum fires when its step is activated', async () => {
+      // Activate step 0 on bass drum before playing
+      root.querySelector<HTMLButtonElement>(
+        '#seq-bass-drum .dm-seq-step[data-step="0"]'
+      )!.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      // Bass drum uses an oscillator — it should have been created
+      expect(ctx.createOscillator).toHaveBeenCalled()
+    })
+
+    it('snare drum fires when its step is activated', async () => {
+      root.querySelector<HTMLButtonElement>(
+        '#seq-snare-drum .dm-seq-step[data-step="0"]'
+      )!.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      // Snare drum creates oscillators for its tone layer
+      expect(ctx.createOscillator).toHaveBeenCalled()
+    })
+
+    it('hi-hat fires when its step is activated', async () => {
+      root.querySelector<HTMLButtonElement>(
+        '#seq-hi-hat .dm-seq-step[data-step="0"]'
+      )!.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      // Hi-hat uses a buffer source
+      expect(ctx.createBufferSource).toHaveBeenCalled()
+    })
+
+    it('deactivating a step stops that instrument from being scheduled', async () => {
+      const stepBtn = root.querySelector<HTMLButtonElement>(
+        '#seq-bass-drum .dm-seq-step[data-step="0"]'
+      )!
+      // Turn on then off
+      stepBtn.click()
+      stepBtn.click()
+
+      const ctx = audioEngine.getContext() as any
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      expect(ctx.createOscillator).not.toHaveBeenCalled()
+    })
   })
 })

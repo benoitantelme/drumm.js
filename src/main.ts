@@ -238,6 +238,11 @@ function renderMachine(root: HTMLElement): void {
     'hi-hat':     root.querySelectorAll<HTMLButtonElement>('#seq-hi-hat .dm-seq-step'),
   }
 
+  // Tell the engine which steps are active for each instrument
+  audioEngine.setStepActiveQuery((instrument, step) =>
+    seqRows[instrument]?.[step]?.getAttribute('aria-pressed') === 'true' ?? false
+  )
+
   function clearCursor(): void {
     root.querySelectorAll('.dm-seq-step--current').forEach(el => {
       el.classList.remove('dm-seq-step--current')
