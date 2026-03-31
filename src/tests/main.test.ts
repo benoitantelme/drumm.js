@@ -100,6 +100,11 @@ describe('render', () => {
     expect(root.querySelector('#stop-btn')).not.toBeNull()
   })
 
+  it('shows a clear button on the machine page', () => {
+    root.querySelector<HTMLButtonElement>('#start-btn')!.click()
+    expect(root.querySelector('#clear-btn')).not.toBeNull()
+  })
+
   it('creates an AudioContext when navigating to the machine page', () => {
     expect(audioEngine.getContext()).toBeNull()
     root.querySelector<HTMLButtonElement>('#start-btn')!.click()
@@ -685,9 +690,59 @@ describe('render', () => {
 
       for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
         const current = root.querySelector(`${rowId} .dm-seq-step--current`)
-        expect(current).not.toBeNull()
-        expect(current!.getAttribute('data-step')).toBe('0')
+      expect(current).not.toBeNull()
+      expect(current!.getAttribute('data-step')).toBe('0')
       }
+    })
+
+    it('clear button resets every step to the inactive state', () => {
+      const bassSteps = root.querySelectorAll<HTMLButtonElement>('#seq-bass-drum .dm-seq-step')
+      const snareSteps = root.querySelectorAll<HTMLButtonElement>('#seq-snare-drum .dm-seq-step')
+      const hiHatSteps = root.querySelectorAll<HTMLButtonElement>('#seq-hi-hat .dm-seq-step')
+
+      bassSteps[0].click()
+      bassSteps[4].click()
+      snareSteps[2].click()
+      hiHatSteps[15].click()
+
+      root.querySelector<HTMLButtonElement>('#clear-btn')!.click()
+
+      root.querySelectorAll<HTMLButtonElement>('.dm-seq-step').forEach(step => {
+        expect(step.getAttribute('aria-pressed')).toBe('false')
+        expect(step.classList.contains('dm-seq-step--on')).toBe(false)
+      })
+    })
+
+    it('clear button removes the visible playhead cursor', async () => {
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      expect(root.querySelectorAll('.dm-seq-step--current').length).toBeGreaterThan(0)
+
+      root.querySelector<HTMLButtonElement>('#clear-btn')!.click()
+
+      expect(root.querySelectorAll('.dm-seq-step--current')).toHaveLength(0)
+    })
+
+    it('clear button leaves the sequence silent on the next restart', async () => {
+      root.querySelector<HTMLButtonElement>(
+        '#seq-bass-drum .dm-seq-step[data-step="0"]'
+      )!.click()
+      root.querySelector<HTMLButtonElement>(
+        '#seq-snare-drum .dm-seq-step[data-step="4"]'
+      )!.click()
+
+      root.querySelector<HTMLButtonElement>('#clear-btn')!.click()
+
+      const ctx = audioEngine.getContext() as any
+      ctx.createOscillator.mockClear()
+      ctx.createBufferSource.mockClear()
+
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(500)
+
+      expect(ctx.createOscillator).not.toHaveBeenCalled()
+      expect(ctx.createBufferSource).not.toHaveBeenCalled()
     })
 
     // ── Step-driven audio ──────────────────────────────────

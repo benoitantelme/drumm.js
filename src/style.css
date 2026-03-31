@@ -523,14 +523,17 @@ body {
 }
 
 .dm-play-btn,
-.dm-stop-btn {
+.dm-stop-btn,
+.dm-clear-btn {
+  font-family: var(--font-display);
+  font-weight: 800;
   font-size: 1.1rem;
   width: 52px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--panel-raise);
   color: var(--accent);
   border: 2px solid var(--accent);
   border-radius: var(--radius-sm);
@@ -538,15 +541,33 @@ body {
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
+.dm-clear-btn {
+  width: auto;
+  min-width: 88px;
+  padding: 0 0.9rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dm-stop-btn__icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  display: block;
+  background: currentColor;
+}
+
 .dm-play-btn:hover,
-.dm-stop-btn:hover {
+.dm-stop-btn:hover,
+.dm-clear-btn:hover {
   background: var(--accent);
   color: #0d0d0d;
   box-shadow: 0 0 16px rgba(232,93,4,.4);
 }
 
 .dm-play-btn:active,
-.dm-stop-btn:active {
+.dm-stop-btn:active,
+.dm-clear-btn:active {
   transform: scale(0.95);
 }
 

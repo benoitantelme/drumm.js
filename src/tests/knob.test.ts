@@ -2,7 +2,7 @@
  * Tests for knob interaction and pure helper functions.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initKnobs, valueToAngle, angleToValue } from '../knob.ts'
+import { initKnobs, valueToAngle, angleToValue } from '../components/knob.ts'
 
 // ── Pure helper tests ────────────────────────────────────
 
@@ -55,6 +55,23 @@ describe('initKnobs', () => {
 
   it('sets the initial --knob-angle from aria-valuenow', () => {
     expect(knob.style.getPropertyValue('--knob-angle')).toBe('0deg')
+  })
+
+  it('falls back to 50 when aria-valuenow is invalid', () => {
+    const invalidRoot = document.createElement('div')
+    const invalidKnob = document.createElement('div')
+    invalidKnob.className = 'dm-knob'
+    invalidKnob.setAttribute('aria-valuenow', 'not-a-number')
+    invalidKnob.setAttribute('aria-valuemin', '0')
+    invalidKnob.setAttribute('aria-valuemax', '100')
+    invalidKnob.setAttribute('tabindex', '0')
+    invalidRoot.appendChild(invalidKnob)
+    document.body.appendChild(invalidRoot)
+
+    initKnobs(invalidRoot)
+
+    expect(invalidKnob.style.getPropertyValue('--knob-angle')).toBe('0deg')
+    expect(invalidKnob.getAttribute('aria-valuenow')).toBe('50')
   })
 
   it('rotates clockwise when dragging upward (mouse)', () => {
