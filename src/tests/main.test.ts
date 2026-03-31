@@ -627,15 +627,15 @@ describe('render', () => {
       }
     })
 
-    it('the cursor advances to a later step after more beats are scheduled', async () => {
+    it('the cursor advances to a later step after more steps are scheduled', async () => {
       await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
       vi.advanceTimersByTime(50)
       const firstStep = root.querySelector<HTMLElement>(
         '#seq-bass-drum .dm-seq-step--current'
       )!
       const firstIndex = Number(firstStep.getAttribute('data-step'))
-      // Advance ~2s so at least one more beat (667ms each at 90 BPM) is scheduled
-      vi.advanceTimersByTime(2000)
+      // Advance 500ms so at least 2 more steps (~167ms each at 90 BPM) are scheduled
+      vi.advanceTimersByTime(500)
       const laterStep = root.querySelector<HTMLElement>(
         '#seq-bass-drum .dm-seq-step--current'
       )!

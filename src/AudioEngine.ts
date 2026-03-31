@@ -67,9 +67,6 @@ export class AudioEngine {
   private _currentStep = 0
   private _onStep: ((step: number) => void) | null = null
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
-  private nextKickTime = 0
-  private nextSnareTime = 0
-  private nextHiHatTime = 0
   private _isPlaying = false
 
   init(): void {
@@ -154,52 +151,58 @@ export class AudioEngine {
     if (!this.context || this._isPlaying) return
     await this.context.resume()
     this._isPlaying = true
-    this.nextKickTime = this.context.currentTime
-    this.nextSnareTime = this.context.currentTime + (60 / this._bpm) / 2
-    // Hi-hat plays on every eighth note (twice per beat interval)
-    this.nextHiHatTime = this.context.currentTime
     this._currentStep = 0
+
+    // One unified step clock. 16 steps = 1 bar of 4/4.
+    // stepS = one sixteenth note = one quarter beat.
+    // Instruments keep their existing rhythm until the sequencer drives them:
+    //   kick    : every 4 steps (quarter note)
+    //   snare   : every 4 steps, offset by 2 steps (quarter note, on beat 3)
+    //   hi-hat  : every 2 steps (eighth note)
+    const startTime = this.context.currentTime
+    let nextStepTime = startTime
 
     this.schedulerTimer = setInterval(() => {
       if (!this.context || !this.bassDrumGain || !this.snareDrumGain || !this.hiHatGain) return
-      const beatS = 60 / this._bpm
+      const stepS = (60 / this._bpm) / 4
 
-      while (this.nextKickTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleBassDrum(
-          this.context,
-          this.nextKickTime,
-          this.bassDrumGain,
-          tuneToHz(this.bassDrumTune),
-          attackToSeconds(this.bassDrumAttack),
-          decayToSeconds(this.bassDrumDecay),
-        )
-        if (this._onStep) this._onStep(this._currentStep)
-        this._currentStep = (this._currentStep + 1) % 16
-        this.nextKickTime += beatS
-      }
+      while (nextStepTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
+        const step = this._currentStep
 
-      while (this.nextSnareTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleSnareDrum(
-          this.context,
-          this.nextSnareTime,
-          this.snareDrumGain,
-          snareTuneToHz(this.snareDrumTune),
-          attackToSeconds(this.snareDrumAttack),
-          decayToSeconds(this.snareDrumDecay),
-        )
-        this.nextSnareTime += beatS
-      }
+        if (this._onStep) this._onStep(step)
 
-      while (this.nextHiHatTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
-        scheduleHiHat(
-          this.context,
-          this.nextHiHatTime,
-          this.hiHatGain,
-          hiHatTuneToHz(this.hiHatTune),
-          hiHatAttackToSeconds(this.hiHatAttack),
-          hiHatDecayToSeconds(this.hiHatDecay),
-        )
-        this.nextHiHatTime += beatS / 2
+        // Kick on steps 0, 4, 8, 12
+        if (step % 4 === 0) {
+          scheduleBassDrum(
+            this.context, nextStepTime, this.bassDrumGain,
+            tuneToHz(this.bassDrumTune),
+            attackToSeconds(this.bassDrumAttack),
+            decayToSeconds(this.bassDrumDecay),
+          )
+        }
+
+        // Snare on steps 2, 6, 10, 14 (half-bar offset = 2 steps)
+        if (step % 4 === 2) {
+          scheduleSnareDrum(
+            this.context, nextStepTime, this.snareDrumGain,
+            snareTuneToHz(this.snareDrumTune),
+            attackToSeconds(this.snareDrumAttack),
+            decayToSeconds(this.snareDrumDecay),
+          )
+        }
+
+        // Hi-hat on every even step (eighth note)
+        if (step % 2 === 0) {
+          scheduleHiHat(
+            this.context, nextStepTime, this.hiHatGain,
+            hiHatTuneToHz(this.hiHatTune),
+            hiHatAttackToSeconds(this.hiHatAttack),
+            hiHatDecayToSeconds(this.hiHatDecay),
+          )
+        }
+
+        this._currentStep = (step + 1) % 16
+        nextStepTime += stepS
       }
     }, SCHEDULER_TICK_MS)
   }

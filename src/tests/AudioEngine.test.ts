@@ -122,20 +122,21 @@ describe('AudioEngine', () => {
     expect(engine.isPlaying).toBe(true)
   })
 
-  it('anchors future note envelopes to the scheduled hit time', async () => {
+  it('schedules a bass drum hit at the correct audio time', async () => {
     engine.init()
     const context = engine.getContext() as unknown as MockAudioContext
 
     await engine.play()
-    ;(engine as any).nextKickTime = 0.05
+    // First scheduler tick: currentTime=0, nextStepTime=0 → step 0 fires (kick step).
+    // oscGain and noiseGain are createGain calls 3 and 4 (after the 3 master gains).
     vi.advanceTimersByTime(50)
 
     const createdGains = context.createGain.mock.results.map((result) => result.value)
     const oscGain = createdGains[3]
     const noiseGain = createdGains[4]
 
-    expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
-    expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
+    expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
+    expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
   })
 
   it('isPlaying is false after stop() is called', async () => {
@@ -540,7 +541,7 @@ describe('AudioEngine', () => {
       expect(engine.getCurrentStep()).toBe(0)
     })
 
-    it('onStep callback fires when a beat is scheduled', async () => {
+    it('onStep callback fires when a step is scheduled', async () => {
       engine.init()
       const cb = vi.fn()
       engine.setOnStep(cb)
@@ -558,13 +559,13 @@ describe('AudioEngine', () => {
       expect(steps[0]).toBe(0)
     })
 
-    it('step increments by 1 on each beat', async () => {
+    it('step increments by 1 on each sixteenth note', async () => {
       engine.init()
       const steps: number[] = []
       engine.setOnStep(s => steps.push(s))
       await engine.play()
-      // At 90 BPM a beat is ~667ms; advance ~2s to guarantee multiple beats
-      vi.advanceTimersByTime(2000)
+      // At 90 BPM a step (sixteenth note) is ~167ms; advance 500ms → ~3 steps
+      vi.advanceTimersByTime(500)
       expect(steps.length).toBeGreaterThan(1)
       // Each consecutive step is exactly 1 more than the previous (mod 16)
       for (let i = 1; i < steps.length; i++) {
@@ -577,8 +578,8 @@ describe('AudioEngine', () => {
       const steps: number[] = []
       engine.setOnStep(s => steps.push(s))
       await engine.play()
-      // 17 beats at 90 BPM ≈ 11.3s; advance 12s to guarantee a full wrap
-      vi.advanceTimersByTime(12000)
+      // 17 steps at 90 BPM ≈ 2.84s; advance 3s to guarantee a full wrap
+      vi.advanceTimersByTime(3000)
       expect(steps).toContain(0)
       expect(steps).toContain(15)
       const wrapIndex = steps.indexOf(0, 1)   // first wrap back to 0
@@ -589,7 +590,7 @@ describe('AudioEngine', () => {
     it('getCurrentStep resets to 0 after stop()', async () => {
       engine.init()
       await engine.play()
-      vi.advanceTimersByTime(50 * 3)
+      vi.advanceTimersByTime(500)
       engine.stop()
       expect(engine.getCurrentStep()).toBe(0)
     })
@@ -602,7 +603,7 @@ describe('AudioEngine', () => {
       vi.advanceTimersByTime(50)
       engine.stop()
       const callsBeforeStop = cb.mock.calls.length
-      vi.advanceTimersByTime(50 * 5)
+      vi.advanceTimersByTime(500)
       expect(cb.mock.calls.length).toBe(callsBeforeStop)
     })
 
@@ -612,7 +613,7 @@ describe('AudioEngine', () => {
       engine.setOnStep(cb)
       engine.setOnStep(null)
       await engine.play()
-      vi.advanceTimersByTime(50 * 3)
+      vi.advanceTimersByTime(500)
       expect(cb).not.toHaveBeenCalled()
     })
   })
