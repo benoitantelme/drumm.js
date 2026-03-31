@@ -46,6 +46,22 @@ describe('initFaders', () => {
     expect(detail!.value).toBe(42)
   })
 
+  it('prefers data-param over id in event detail', () => {
+    let detail: { param: string; value: number } | null = null
+    fader.dataset.param = 'bass-drum'
+
+    root.addEventListener('dm:fader-change', (e) => {
+      detail = (e as CustomEvent).detail
+    })
+
+    fader.value = '64'
+    fader.dispatchEvent(new Event('input', { bubbles: true }))
+
+    expect(detail).not.toBeNull()
+    expect(detail!.param).toBe('bass-drum')
+    expect(detail!.value).toBe(64)
+  })
+
   it('event bubbles up from the fader', () => {
     const parentListener = vi.fn()
     document.body.addEventListener('dm:fader-change', parentListener)

@@ -21,6 +21,11 @@ function clamp(val: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, val))
 }
 
+function parseKnobValue(knob: HTMLElement): number {
+  const rawValue = Number(knob.getAttribute('aria-valuenow') ?? '50')
+  return Number.isFinite(rawValue) ? clamp(rawValue, 0, 100) : 50
+}
+
 export type KnobChangeCallback = (param: string, value: number) => void
 
 function setKnobAngle(
@@ -38,7 +43,7 @@ function setKnobAngle(
 }
 
 function initKnob(knob: HTMLElement, onChange?: KnobChangeCallback): void {
-  const initialValue = parseInt(knob.getAttribute('aria-valuenow') ?? '50', 10)
+  const initialValue = parseKnobValue(knob)
   let currentAngle = valueToAngle(initialValue)
   setKnobAngle(knob, currentAngle)
 
