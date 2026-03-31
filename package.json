@@ -1,6 +1,6 @@
 {
   "name": "drumm.js",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Interactive drum machine — GitHub Pages",
   "type": "module",
   "scripts": {

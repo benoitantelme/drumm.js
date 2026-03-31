@@ -15,7 +15,7 @@ interface AppInfo {
 
 export const APP: AppInfo = {
   name: 'Drumm.js',
-  version: '0.4.0',
+  version: '0.5.0',
   buildTime: new Date().toISOString(),
 }
 
