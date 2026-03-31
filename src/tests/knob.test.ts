@@ -2,7 +2,7 @@
  * Tests for knob interaction and pure helper functions.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { initKnobs, valueToAngle, angleToValue } from '../knob.ts'
+import { initKnobs, valueToAngle, angleToValue } from '../components/knob.ts'
 
 // ── Pure helper tests ────────────────────────────────────
 

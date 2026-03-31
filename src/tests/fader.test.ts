@@ -2,7 +2,7 @@
  * Tests for fader interaction.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { initFaders } from '../fader.ts'
+import { initFaders } from '../components/fader.ts'
 
 describe('initFaders', () => {
   let root: HTMLElement

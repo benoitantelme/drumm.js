@@ -4,8 +4,8 @@
  */
 
 import { AudioEngine, DEFAULT_BPM, BPM_MIN, BPM_MAX } from './AudioEngine.ts'
-import { initKnobs } from './knob.ts'
-import { initFaders } from './fader.ts'
+import { initKnobs } from './components/knob.ts'
+import { initFaders } from './components/fader.ts'
 
 interface AppInfo {
   name: string
