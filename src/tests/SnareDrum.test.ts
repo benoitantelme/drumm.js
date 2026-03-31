@@ -17,12 +17,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { scheduleSnareDrum, snareTuneToHz } from '../instruments/SnareDrum.ts'
 
 // ── mirrored constants ───────────────────────────────────
-const SNARE_TONE_GAIN        = 0.25
+const SNARE_TONE_GAIN        = 0.20
 const SNARE_TONE_DECAY_MAX_S = 0.040
 const SNARE_TONE_DECAY_RATIO = 0.15
 const SNARE_TONE_TAIL_GAIN   = 0.015
-const CRACK_PEAK_GAIN        = 0.55
-const RATTLE_PEAK_GAIN       = 0.45
+const CRACK_PEAK_GAIN        = 0.45
+const RATTLE_PEAK_GAIN       = 0.36
 const ENVELOPE_FLOOR         = 0.0001
 const CRACK_DURATION_S       = 0.08
 
