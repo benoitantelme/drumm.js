@@ -616,5 +616,22 @@ describe('AudioEngine', () => {
       vi.advanceTimersByTime(500)
       expect(cb).not.toHaveBeenCalled()
     })
+
+    it('restarts from step 0 after stop then play', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+
+      // Play for a while, then stop
+      await engine.play()
+      vi.advanceTimersByTime(500)
+      engine.stop()
+      steps.length = 0   // clear recorded steps
+
+      // Restart and capture the first step fired
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      expect(steps[0]).toBe(0)
+    })
   })
 })

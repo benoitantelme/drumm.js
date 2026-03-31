@@ -66,6 +66,7 @@ export class AudioEngine {
   private _bpm = DEFAULT_BPM
   private _currentStep = 0
   private _onStep: ((step: number) => void) | null = null
+  private _stepQueue: Array<{ step: number; time: number }> = []
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
   private _isPlaying = false
 
@@ -152,6 +153,7 @@ export class AudioEngine {
     await this.context.resume()
     this._isPlaying = true
     this._currentStep = 0
+    this._stepQueue = []
 
     // One unified step clock. 16 steps = 1 bar of 4/4.
     // stepS = one sixteenth note = one quarter beat.
@@ -166,10 +168,12 @@ export class AudioEngine {
       if (!this.context || !this.bassDrumGain || !this.snareDrumGain || !this.hiHatGain) return
       const stepS = (60 / this._bpm) / 4
 
+      // ── Schedule ahead ──────────────────────────────────
       while (nextStepTime < this.context.currentTime + SCHEDULE_AHEAD_S) {
         const step = this._currentStep
 
-        if (this._onStep) this._onStep(step)
+        // Push to queue so the UI callback fires at the correct real-time moment
+        this._stepQueue.push({ step, time: nextStepTime })
 
         // Kick on steps 0, 4, 8, 12
         if (step % 4 === 0) {
@@ -204,6 +208,13 @@ export class AudioEngine {
         this._currentStep = (step + 1) % 16
         nextStepTime += stepS
       }
+
+      // ── Drain queue: fire UI callback for steps whose audio time has arrived
+      if (this._onStep) {
+        while (this._stepQueue.length > 0 && this._stepQueue[0].time <= this.context.currentTime) {
+          this._onStep(this._stepQueue.shift()!.step)
+        }
+      }
     }, SCHEDULER_TICK_MS)
   }
 
@@ -222,6 +233,7 @@ export class AudioEngine {
     }
     this._isPlaying = false
     this._currentStep = 0
+    this._stepQueue = []
   }
 
   async resume(): Promise<void> {

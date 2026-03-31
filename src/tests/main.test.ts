@@ -672,5 +672,22 @@ describe('render', () => {
       expect(step0.classList.contains('dm-seq-step--on')).toBe(true)
       expect(step0.classList.contains('dm-seq-step--current')).toBe(true)
     })
+
+    it('cursor highlights step 0 when restarting after stop', async () => {
+      // Play for a while then stop
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(500)
+      root.querySelector<HTMLButtonElement>('#stop-btn')!.click()
+
+      // Restart
+      await root.querySelector<HTMLButtonElement>('#play-btn')!.click()
+      vi.advanceTimersByTime(50)
+
+      for (const rowId of ['#seq-bass-drum', '#seq-snare-drum', '#seq-hi-hat']) {
+        const current = root.querySelector(`${rowId} .dm-seq-step--current`)
+        expect(current).not.toBeNull()
+        expect(current!.getAttribute('data-step')).toBe('0')
+      }
+    })
   })
 })
