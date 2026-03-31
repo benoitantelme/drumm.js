@@ -267,6 +267,7 @@ function renderMachine(root: HTMLElement): void {
             <div class="dm-transport">
               <button class="dm-play-btn" id="play-btn" aria-label="Play">▶</button>
               <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">■</button>
+              <button class="dm-clear-btn" id="clear-btn" aria-label="Clear sequence">CLEAR</button>
             </div>
           </div>
 
@@ -295,6 +296,14 @@ function renderMachine(root: HTMLElement): void {
     })
   }
 
+  function clearSequence(): void {
+    root.querySelectorAll<HTMLButtonElement>('.dm-seq-step').forEach(step => {
+      step.setAttribute('aria-pressed', 'false')
+      step.classList.remove('dm-seq-step--on')
+    })
+    clearCursor()
+  }
+
   audioEngine.setOnStep((step: number) => {
     clearCursor()
     for (const row of Object.values(seqRows)) {
@@ -311,6 +320,9 @@ function renderMachine(root: HTMLElement): void {
       clearCursor()
     })
 
+  root.querySelector<HTMLButtonElement>('#clear-btn')!
+    .addEventListener('click', () => clearSequence())
+
   initKnobs(root, (param, value) => {
     const handler = knobHandlers[param as KnobParam]
     if (handler) handler(root, value)
@@ -326,8 +338,6 @@ function renderMachine(root: HTMLElement): void {
       btn.classList.toggle('dm-seq-step--on', !active)
     })
   })
-
-  // Wire fader directly → engine volume
 }
 
 /** Public entry point — renders the greeting view into the given root element. */
