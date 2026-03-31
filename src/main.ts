@@ -240,7 +240,7 @@ function renderMachine(root: HTMLElement): void {
 
   // Tell the engine which steps are active for each instrument
   audioEngine.setStepActiveQuery((instrument, step) =>
-    seqRows[instrument]?.[step]?.getAttribute('aria-pressed') === 'true' ?? false
+    seqRows[instrument]?.[step]?.getAttribute('aria-pressed') === 'true'
   )
 
   function clearCursor(): void {

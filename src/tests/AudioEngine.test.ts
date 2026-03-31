@@ -59,9 +59,9 @@ class MockAudioContext {
       connect: vi.fn(),
     }
   }
-  createBufferSource() {
-    return { buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn() }
-  }
+  createBufferSource = vi.fn().mockReturnValue(
+    { buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn() }
+  )
 }
 
 vi.stubGlobal('AudioContext', MockAudioContext)
@@ -139,8 +139,8 @@ describe('AudioEngine', () => {
     const oscGain = createdGains[3]
     const noiseGain = createdGains[4]
 
-    expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
-    expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0)
+    expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
+    expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
   })
 
   it('does not schedule any instruments when no steps are active', async () => {
