@@ -266,7 +266,7 @@ function renderMachine(root: HTMLElement): void {
           <div class="dm-machine__footer">
             <div class="dm-transport">
               <button class="dm-play-btn" id="play-btn" aria-label="Play">▶</button>
-              <button class="dm-stop-btn" id="stop-btn" aria-label="Stop">■</button>
+              <button class="dm-stop-btn" id="stop-btn" aria-label="Stop"><span class="dm-stop-btn__icon" aria-hidden="true"></span></button>
               <button class="dm-clear-btn" id="clear-btn" aria-label="Clear sequence">CLEAR</button>
             </div>
           </div>

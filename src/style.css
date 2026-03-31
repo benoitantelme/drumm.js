@@ -550,6 +550,13 @@ body {
   text-transform: uppercase;
 }
 
+.dm-stop-btn__icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  display: block;
+  background: currentColor;
+}
+
 .dm-play-btn:hover,
 .dm-stop-btn:hover,
 .dm-clear-btn:hover {
