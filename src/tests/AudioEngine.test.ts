@@ -33,7 +33,8 @@ const mockClose   = vi.fn().mockResolvedValue(undefined)
 
 class MockAudioContext {
   state: string = 'running'
-  currentTime: number = 0
+  private readonly _startMs: number = Date.now()
+  get currentTime(): number { return (Date.now() - this._startMs) / 1000 }
   sampleRate: number = 44100
   destination = {}
   resume  = mockResume
@@ -58,9 +59,9 @@ class MockAudioContext {
       connect: vi.fn(),
     }
   }
-  createBufferSource() {
-    return { buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn() }
-  }
+  createBufferSource = vi.fn().mockReturnValue(
+    { buffer: null, connect: vi.fn(), start: vi.fn(), stop: vi.fn() }
+  )
 }
 
 vi.stubGlobal('AudioContext', MockAudioContext)
@@ -121,20 +122,37 @@ describe('AudioEngine', () => {
     expect(engine.isPlaying).toBe(true)
   })
 
-  it('anchors future note envelopes to the scheduled hit time', async () => {
+  it('schedules a bass drum hit at the correct audio time when step is active', async () => {
     engine.init()
     const context = engine.getContext() as unknown as MockAudioContext
 
+    // Activate step 0 for bass-drum so the scheduler fires it
+    engine.setStepActiveQuery((instrument, step) =>
+      instrument === 'bass-drum' && step === 0
+    )
+
     await engine.play()
-    ;(engine as any).nextKickTime = 0.05
     vi.advanceTimersByTime(50)
 
+    // oscGain and noiseGain are createGain calls 3 and 4 (after the 3 master gains)
     const createdGains = context.createGain.mock.results.map((result) => result.value)
     const oscGain = createdGains[3]
     const noiseGain = createdGains[4]
 
     expect(oscGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
     expect(noiseGain.gain.setValueAtTime).toHaveBeenCalledWith(0.0001, 0.05)
+  })
+
+  it('does not schedule any instruments when no steps are active', async () => {
+    engine.init()
+    const context = engine.getContext() as unknown as MockAudioContext
+
+    engine.setStepActiveQuery(() => false)
+    await engine.play()
+    vi.advanceTimersByTime(500)
+
+    // Only the 3 master gain nodes should have been created (no instrument voices)
+    expect(context.createGain.mock.calls.length).toBe(3)
   })
 
   it('isPlaying is false after stop() is called', async () => {
@@ -530,6 +548,143 @@ describe('AudioEngine', () => {
     it('accepts a mid-range value like 90', () => {
       engine.setBpm(90)
       expect(engine.getBpm()).toBe(90)
+    })
+  })
+
+  describe('step sequencer cursor', () => {
+    it('getCurrentStep starts at 0', () => {
+      engine.init()
+      expect(engine.getCurrentStep()).toBe(0)
+    })
+
+    it('onStep callback fires when a step is scheduled', async () => {
+      engine.init()
+      const cb = vi.fn()
+      engine.setOnStep(cb)
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      expect(cb).toHaveBeenCalled()
+    })
+
+    it('onStep callback is called with step 0 first', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      expect(steps[0]).toBe(0)
+    })
+
+    it('step increments by 1 on each sixteenth note', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+      await engine.play()
+      // At 90 BPM a step (sixteenth note) is ~167ms; advance 500ms → ~3 steps
+      vi.advanceTimersByTime(500)
+      expect(steps.length).toBeGreaterThan(1)
+      // Each consecutive step is exactly 1 more than the previous (mod 16)
+      for (let i = 1; i < steps.length; i++) {
+        expect(steps[i]).toBe((steps[i - 1] + 1) % 16)
+      }
+    })
+
+    it('step wraps back to 0 after step 15', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+      await engine.play()
+      // 17 steps at 90 BPM ≈ 2.84s; advance 3s to guarantee a full wrap
+      vi.advanceTimersByTime(3000)
+      expect(steps).toContain(0)
+      expect(steps).toContain(15)
+      const wrapIndex = steps.indexOf(0, 1)   // first wrap back to 0
+      expect(wrapIndex).toBeGreaterThan(-1)
+      expect(steps[wrapIndex - 1]).toBe(15)
+    })
+
+    it('getCurrentStep resets to 0 after stop()', async () => {
+      engine.init()
+      await engine.play()
+      vi.advanceTimersByTime(500)
+      engine.stop()
+      expect(engine.getCurrentStep()).toBe(0)
+    })
+
+    it('onStep is not called after stop()', async () => {
+      engine.init()
+      const cb = vi.fn()
+      engine.setOnStep(cb)
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      engine.stop()
+      const callsBeforeStop = cb.mock.calls.length
+      vi.advanceTimersByTime(500)
+      expect(cb.mock.calls.length).toBe(callsBeforeStop)
+    })
+
+    it('setOnStep(null) removes the callback', async () => {
+      engine.init()
+      const cb = vi.fn()
+      engine.setOnStep(cb)
+      engine.setOnStep(null)
+      await engine.play()
+      vi.advanceTimersByTime(500)
+      expect(cb).not.toHaveBeenCalled()
+    })
+
+    it('restarts from step 0 after stop then play', async () => {
+      engine.init()
+      const steps: number[] = []
+      engine.setOnStep(s => steps.push(s))
+
+      // Play for a while, then stop
+      await engine.play()
+      vi.advanceTimersByTime(500)
+      engine.stop()
+      steps.length = 0   // clear recorded steps
+
+      // Restart and capture the first step fired
+      await engine.play()
+      vi.advanceTimersByTime(50)
+      expect(steps[0]).toBe(0)
+    })
+
+    it('schedules an instrument when its step query returns true', async () => {
+      engine.init()
+      const context = engine.getContext() as unknown as MockAudioContext
+
+      engine.setStepActiveQuery((instrument, step) =>
+        instrument === 'hi-hat' && step === 0
+      )
+      await engine.play()
+      vi.advanceTimersByTime(50)
+
+      // hi-hat uses createBufferSource; if it fired, one source was created
+      expect(context.createBufferSource).toHaveBeenCalled()
+    })
+
+    it('does not schedule an instrument when its step query returns false', async () => {
+      engine.init()
+      const context = engine.getContext() as unknown as MockAudioContext
+
+      engine.setStepActiveQuery(() => false)
+      await engine.play()
+      vi.advanceTimersByTime(500)
+
+      // No instrument voices created beyond the 3 master gain nodes
+      expect(context.createGain.mock.calls.length).toBe(3)
+    })
+
+    it('setStepActiveQuery(null) means no instruments fire', async () => {
+      engine.init()
+      const context = engine.getContext() as unknown as MockAudioContext
+
+      engine.setStepActiveQuery(null)
+      await engine.play()
+      vi.advanceTimersByTime(500)
+
+      expect(context.createGain.mock.calls.length).toBe(3)
     })
   })
 })

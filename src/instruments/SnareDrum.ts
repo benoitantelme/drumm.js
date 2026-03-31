@@ -6,7 +6,7 @@ const ATTACK_MIN_S = 0.001
 const ATTACK_MAX_S = 0.030
 
 // ── Tone body ───────────────────────────────────────────
-const SNARE_TONE_GAIN = 0.25
+const SNARE_TONE_GAIN = 0.20
 const SNARE_TONE_DETUNE_HZ = 30          // second oscillator offset for fatness
 const SNARE_TONE_DECAY_MAX_S = 0.040     // tone snaps off quickly regardless of decay knob
 const SNARE_TONE_DECAY_RATIO = 0.15      // tone decay = min(max, decayS * ratio)
@@ -16,13 +16,13 @@ const SNARE_TONE_TAIL_GAIN = 0.015       // quiet residual that blends into the 
 const CRACK_DURATION_S = 0.08
 const CRACK_EDGE_FADE_S = 0.001
 const CRACK_HIGHPASS_HZ = 1200
-const CRACK_PEAK_GAIN = 0.55
+const CRACK_PEAK_GAIN = 0.45
 
 // ── Rattle layer (snare wires, filtered noise) ─────────
 const RATTLE_EDGE_FADE_S = 0.004
 const RATTLE_HIGHPASS_HZ = 1800
 const RATTLE_LOWPASS_HZ  = 8000
-const RATTLE_PEAK_GAIN   = 0.45
+const RATTLE_PEAK_GAIN   = 0.36
 
 export function snareTuneToHz(tune: number): number {
   return SNARE_TUNE_MIN_HZ + (tune / 100) * (SNARE_TUNE_MAX_HZ - SNARE_TUNE_MIN_HZ)
