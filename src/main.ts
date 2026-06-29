@@ -198,7 +198,7 @@ function renderGreeting(root: HTMLElement): void {
         <p class="dm-greeting__info-text">
           Welcome to the drum machine project.<br />
           Running on <strong>${platform}</strong>.<br />
-          Instruments, sequencer, and audio engine developed.<br />
+          Instruments, sequencer and audio engine developed.<br />
           Fx, memory, and presets coming next.
         </p>
         <div class="dm-badges">
